@@ -1,0 +1,8 @@
+
+#include <stdint.h>
+
+#define PFS2_CARROT_CHOMP_7_BITS_PER_SAMPLE 16
+#define PFS2_CARROT_CHOMP_7_SAMPLE_RATE 32000
+#define PFS2_CARROT_CHOMP_7_SAMPLES 19200
+
+extern const int16_t PFS2_Carrot_Chomp_7[PFS2_CARROT_CHOMP_7_SAMPLES];
