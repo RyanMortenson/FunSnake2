@@ -130,19 +130,11 @@ void app_main(void){
            lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
        #endif // CONFIG_ERASE
            //game_tick();
-           cursor_tick();
-           cursor_get_pos(&x, &y);
-       #ifdef CONFIG_ERASE
-           static coord_t lx = -1, ly = -1;
-           if (x != lx || y != ly) {
-               cursor(lx,  ly, CONFIG_COLOR_BACKGROUND);
-               lx = x; ly = y;
-           }
-       #endif // CONFIG_ERASE
-           cursor(x, y, CONFIG_COLOR_CURSOR);
-           lcd_writeFrame();
-           t2 = esp_timer_get_time() - t1;
-           if (t2 > tmax) tmax = t2;
+        cursor_tick();
+        cursor_get_pos(&x, &y);
+		printf("x: %ld, y: %ld", x, y);
+		t2 = esp_timer_get_time() - t1;
+        if (t2 > tmax) tmax = t2;
    }
    printf("Handled %lu of %lu interrupts\n", isr_handled_count, isr_triggered_count);
    printf("WCET us:%llu\n", tmax);
