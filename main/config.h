@@ -1,0 +1,10 @@
+#ifndef CONFIG_H_
+#define CONFIG_H_
+
+
+#define CONFIG_GAME_TIMER_PERIOD 40.0E-3f
+#define CONFIG_COLOR_BACKGROUND rgb565(0, 4, 16)
+#define CONFIG_COLOR_CURSOR WHITE
+
+
+#endif // CONFIG_H_
