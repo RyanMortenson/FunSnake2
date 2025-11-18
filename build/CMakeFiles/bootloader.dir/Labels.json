@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/auto/fsb/zwhite0/ecen330/FunSnake2/build/CMakeFiles/bootloader"
+		},
+		{
+			"file" : "/auto/fsb/zwhite0/ecen330/FunSnake2/build/CMakeFiles/bootloader.rule"
+		},
+		{
+			"file" : "/auto/fsb/zwhite0/ecen330/FunSnake2/build/CMakeFiles/bootloader-complete.rule"
+		},
+		{
+			"file" : "/auto/fsb/zwhite0/ecen330/FunSnake2/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
+		},
+		{
+			"file" : "/auto/fsb/zwhite0/ecen330/FunSnake2/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
+		},
+		{
+			"file" : "/auto/fsb/zwhite0/ecen330/FunSnake2/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
+		},
+		{
+			"file" : "/auto/fsb/zwhite0/ecen330/FunSnake2/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
+		},
+		{
+			"file" : "/auto/fsb/zwhite0/ecen330/FunSnake2/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
+		},
+		{
+			"file" : "/auto/fsb/zwhite0/ecen330/FunSnake2/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
+		},
+		{
+			"file" : "/auto/fsb/zwhite0/ecen330/FunSnake2/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"bootloader"
+		],
+		"name" : "bootloader"
+	}
+}
