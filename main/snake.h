@@ -1,10 +1,17 @@
 #define SNAKE_MAX 256
 
 
-typedef struct {
+typedef struct snake_block_t {
 	coord_t block_x;
 	coord_t block_y;
+	struct snake_block_t *next;
 } snake_block_t;
+
+typedef struct snake_queue_t {
+    snake_block_t *head;  // front of queue (snake head)
+    snake_block_t *tail;  // back of queue (snake tail)
+    uint16_t size;
+} snake_queue_t;
 
 
 // This struct contains all information about a snake.
@@ -12,12 +19,32 @@ typedef struct {
 	// Current state. The 'enum' is defined in your snake.c file.
 	int32_t currentState;
 
-	// Array of snake body blocks
-	snake_block_t body[SNAKE_MAX];
+	//queue for snake
+	snake_queue_t queue;
 
-    // Location of the snek head
-    snake_block_t head;
+	//direction the snake is headed(same as joystick)
+	//up:1
+	//right:2
+	//down:3
+	//left:4
+	uint8_t direction;
 
-	// The total length of the snake
-	int32_t total_length;
+	//player number of snake
+	uint8_t player;
 } snake_t;
+
+//add to the front of the queue
+void snake_push_head(snake_queue_t *q, coord_t x, coord_t y);
+
+//initialize snake variables
+void snake_init(snake_t *snake, uint8_t player);
+
+//removes the tail piece of the snake
+void snake_pop_tail(snake_queue_t *q);
+
+//function that will move the snake one block forward
+void snake_move(snake_t *snake, coord_t new_x, coord_t new_y, bool ate_fruit);
+
+//changed snakes direction
+void snake_change_direction(snake_t *snake, uint8_t new_direction);
+
