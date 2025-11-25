@@ -5,8 +5,8 @@
 #include "hw.gc.h"
 #include "lcd.h"
 
-#define TOTAL_COLUMNS HW_LCD_W/5
-#define TOTAL_ROWS HW_LCD_H/5
+#define TOTAL_COLUMNS HW_LCD_W/16  //20 Total
+#define TOTAL_ROWS HW_LCD_H/16     //15 total
 
 typedef enum {
     init_st,
