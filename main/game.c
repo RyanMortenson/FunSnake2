@@ -21,6 +21,8 @@ typedef enum {
 game_state_t currentState;
 
 // Game state variables
+static uint8_t my_player_id; 
+static bool i_am_host;
 static snake_t snake1;
 static snake_t snake2;
 static coord_t fruit_x;
@@ -124,6 +126,7 @@ void game_tick(void){
             break;
 
         case waiting_st:
+        //UPDATE PLAYER ID AND HOST HERE
             if (!pin_get_level(HW_BTN_START)) {
                 snake_init(&snake1, 1);
                 snake_init(&snake2, 2);
@@ -145,15 +148,15 @@ void game_tick(void){
             int dr = r - prev_r;
             int dc = c - prev_c;
 
-            if (dc > 0) snake_change_direction(&snake1, RIGHT);
-            else if (dc < 0) snake_change_direction(&snake1, LEFT);
-            if (dr > 0) snake_change_direction(&snake1, DOWN);
-            else if (dr < 0) snake_change_direction(&snake1, UP);
+            snake_t* mySnake = (my_player_id == 1 ? &snake1 : &snake2);
+
+            if (dc > 0) snake_change_direction(mySnake, RIGHT);
+            else if (dc < 0) snake_change_direction(mySnake, LEFT);
+            if (dr > 0) snake_change_direction(mySnake, DOWN);
+            else if (dr < 0) snake_change_direction(mySnake, UP);
 
             prev_r = r;
             prev_c = c;
-            // TODO: read controls to change directions
-            // e.g. snake_change_direction(&snake1, DIR_UP);
 
             // Move snakes
             bool p1_ate = (snake1.queue.head->block_x == fruit_x &&
@@ -165,8 +168,9 @@ void game_tick(void){
             snake_move(&snake1, p1_ate);
             snake_move(&snake2, p2_ate);
 
-            if (p1_ate || p2_ate) {
+            if (i_am_host && (p1_ate || p2_ate)) {
                 spawn_fruit();
+                //ADD SEND FRUIT LOC THROUGH WIFI HERE
             }
 
             // COLLISION DETECTION
