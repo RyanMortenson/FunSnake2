@@ -2,8 +2,11 @@
 #include <stdlib.h> // rand
 
 #include "game.h"
+#include "snake.h"
 #include "hw.gc.h"
 #include "lcd.h"
+#include "pin.h"
+#include "nav.h"
 
 #define TOTAL_COLUMNS HW_LCD_W/16  //20 Total
 #define TOTAL_ROWS HW_LCD_H/16     //15 total
@@ -17,9 +20,90 @@ typedef enum {
 
 game_state_t currentState;
 
+// Game state variables
+static snake_t snake1;
+static snake_t snake2;
+static coord_t fruit_x;
+static coord_t fruit_y;
+
 //draw UI for wait screen
 void draw_wait_screen(){
-    
+    lcd_clear();
+
+    // TODO: use your LCD text function
+    lcd_draw_text(30, 40, "SNAKE GAME", LCD_WHITE);
+    lcd_draw_text(20, 80, "Press START to begin", LCD_WHITE);
+}
+
+//draw game over screen
+void draw_game_over_screen() {
+    lcd_clear();
+    lcd_draw_text(30, 60, "GAME OVER", LCD_RED);
+    lcd_draw_text(10, 100, "Press START to restart", LCD_WHITE);
+}
+
+//draws the board to the screen
+void draw_board() {
+    lcd_clear();
+
+    // Draw fruit
+    // TODO: replace with your draw-square function
+    lcd_draw_rect(fruit_x * 16, fruit_y * 16, 16, 16, LCD_RED);
+
+    // Draw snake 1
+    snake_block_t *b = snake1.queue.head;
+    while (b) {
+        lcd_draw_rect(b->block_x * 16, b->block_y * 16, 16, 16, LCD_GREEN);
+        b = b->next;
+    }
+
+    // Draw snake 2
+    b = snake2.queue.head;
+    while (b) {
+        lcd_draw_rect(b->block_x * 16, b->block_y * 16, 16, 16, LCD_BLUE);
+        b = b->next;
+    }
+}
+
+//chooses random location on board to put fruit
+void spawn_fruit() {
+    fruit_x = rand() % TOTAL_COLUMNS;
+    fruit_y = rand() % TOTAL_ROWS;
+}
+
+//checks if snake has hit the wall
+bool hit_wall(snake_t *s) {
+    int x = s->queue.head->block_x;
+    int y = s->queue.head->block_y;
+    return (x < 0 || x >= TOTAL_COLUMNS || y < 0 || y >= TOTAL_ROWS);
+}
+
+//checks if the snake has hit itself
+bool self_collision(snake_t *s) {
+    snake_block_t *head = s->queue.head;
+    snake_block_t *cur = head->next;
+
+    while (cur) {
+        if (cur->block_x == head->block_x && cur->block_y == head->block_y) {
+            return true;
+        }
+        cur = cur->next;
+    }
+    return false;
+}
+
+//checks if snake has hit other snake
+bool snake_collision(snake_t *a, snake_t *b) {
+    snake_block_t *head = a->queue.head;
+    snake_block_t *cur = b->queue.head;
+
+    while (cur) {
+        if (cur->block_x == head->block_x && cur->block_y == head->block_y) {
+            return true;
+        }
+        cur = cur->next;
+    }
+    return false;
 }
 
 // Initialize the game control logic.
@@ -31,5 +115,81 @@ void game_init(void){
 // Update the game control logic.
 // detects collisions, and updates statistics.
 void game_tick(void){
+    //FSM for the game
+    switch(currentState){
+        case init_st:
+            nav_init(50);
+            draw_wait_screen();
+            currentState = waiting_st;
+            break;
+
+        case waiting_st:
+            if (!pin_get_level(HW_BTN_START)) {
+                snake_init(&snake1, 1);
+                snake_init(&snake2, 2);
+                spawn_fruit();
+                currentState = playing_st;
+            }
+            break;
+
+        case playing_st:
+            // --- UPDATE JOYSTICK NAVIGATOR ---
+            nav_tick();
+
+            int8_t r, c;
+            nav_get_loc(&r, &c);
+
+            static int8_t prev_r = GRID_R/2;
+            static int8_t prev_c = GRID_C/2;
+
+            int dr = r - prev_r;
+            int dc = c - prev_c;
+
+            if (dc > 0) snake_change_direction(&snake1, RIGHT);
+            else if (dc < 0) snake_change_direction(&snake1, LEFT);
+            if (dr > 0) snake_change_direction(&snake1, DOWN);
+            else if (dr < 0) snake_change_direction(&snake1, UP);
+
+            prev_r = r;
+            prev_c = c;
+            // TODO: read controls to change directions
+            // e.g. snake_change_direction(&snake1, DIR_UP);
+
+            // Move snakes
+            bool p1_ate = (snake1.queue.head->block_x == fruit_x &&
+                        snake1.queue.head->block_y == fruit_y);
+
+            bool p2_ate = (snake2.queue.head->block_x == fruit_x &&
+                        snake2.queue.head->block_y == fruit_y);
+
+            snake_move(&snake1, p1_ate);
+            snake_move(&snake2, p2_ate);
+
+            if (p1_ate || p2_ate) {
+                spawn_fruit();
+            }
+
+            // COLLISION DETECTION
+            if (hit_wall(&snake1) || hit_wall(&snake2) ||
+                self_collision(&snake1) || self_collision(&snake2) ||
+                snake_collision(&snake1, &snake2) ||
+                snake_collision(&snake2, &snake1)) {
+
+                currentState = game_over_st;
+                break;
+            }
+
+            // Draw updated game state
+            draw_board();
+            break;
+
+        case game_over_st:
+            draw_game_over_screen();
+
+            if (hw_buttons_start_pressed()) {  // restart
+                currentState = init_st;
+            }
+            break:
+    }
     
 }

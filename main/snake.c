@@ -1,4 +1,5 @@
 #include "snake.h"
+#include <stdlib.h>
 
 #define START_Y 8
 #define P1_START_X 3
@@ -85,5 +86,11 @@ void snake_move(snake_t *snake, bool ate_fruit){
 
 //changes snake direction
 void snake_change_direction(snake_t *snake, uint8_t new_direction){
+    if ((snake->direction == UP && new_direction == DOWN) ||
+        (snake->direction == DOWN && new_direction == UP) ||
+        (snake->direction == LEFT && new_direction == RIGHT) ||
+        (snake->direction == RIGHT && new_direction == LEFT)) {
+        return;
+    }
     snake->direction = new_direction;
 }
