@@ -1,85 +1,71 @@
 // com.c — ultra-minimal color picker FSM
+#include <stddef.h>
+#include "freertos/FreeRTOS.h"
 #include "menu.h"
 #include "lcd.h"
+#include "net.h"
 
+#define MESS_FONT_SZ 1
+
+#define MESS_X (LCD_CHAR_W*MESS_FONT_SZ)
+#define MESS_Y (LCD_H-MESS_H)
+#define MESS_W (LCD_W-LCD_CHAR_W*MESS_FONT_SZ*2)
+#define MESS_H (LCD_CHAR_H*MESS_FONT_SZ)
+
+#define GROUP_ID 1
+#define GROUP_WAIT 4000 // ms
+#define SEND_COUNT 20
+#define SEND_DELAY 1000
 #ifndef WHITE
 #define WHITE 0xFFFF
 #endif
 
-// Map these bits to your board in main() and pass them to menu_update()
-#define BTN_LEFT    (1u << 0)
-#define BTN_RIGHT   (1u << 1)
-#define BTN_SELECT  (1u << 4)
-#define BTN_BACK    (1u << 5)
-
-static inline const char* color_name(color_selection_t c) {
-    return (c == COLOR_BLUE) ? "BLUE" : "RED";
+void graphics_drawMessage(const char *str, color_t color, color_t bg)
+{
+	lcd_fillRect(MESS_X, MESS_Y, MESS_W, MESS_H, bg);
+	lcd_setFontSize(MESS_FONT_SZ);
+	lcd_drawString(MESS_X, MESS_Y, str, color);
 }
 
-void menu_init(menu_t *m) {
-    if (!m) return;
-    m->state      = MENU_STATE_COLOR_SELECT;  // only two states used
-    m->color      = COLOR_BLUE;               // default
-    m->both_ready = false;                    // “ready” = user confirmed
+int32_t com_init(void){
+    int32_t ret = net_init();
+    if (ret) {
+		return -1;
+	}
+    net_group_open(GROUP_ID);
+    graphics_drawMessage("Waiting to join group...", CYAN, rgb565(0, 16, 42));
+    vTaskDelay(pdMS_TO_TICKS(GROUP_WAIT));
+    net_group_close();
+    return 0;
 }
 
-void menu_set_color(menu_t *m, color_selection_t c) {
-    if (!m) return;
-    m->color = c;
+// Free resources used for communication.
+// Return zero if successful, or non-zero otherwise.
+int32_t com_deinit(void){
+     return net_deinit();
 }
 
-void menu_update(menu_t *m, uint8_t input) {
-    if (!m) return;
-
-    switch (m->state) {
-    case MENU_STATE_COLOR_SELECT:
-        // Toggle color with LEFT/RIGHT
-        if (input & (BTN_LEFT | BTN_RIGHT)) {
-            m->color = (m->color == COLOR_BLUE) ? COLOR_RED : COLOR_BLUE;
-        }
-        // SELECT -> ready
-        if (input & BTN_SELECT) {
-            m->both_ready = true;
-            m->state = MENU_STATE_READY;
-        }
-        break;
-
-    case MENU_STATE_READY:
-        // Optional: BACK to un-ready and change color again
-        if (input & BTN_BACK) {
-            m->both_ready = false;
-            m->state = MENU_STATE_COLOR_SELECT;
-        }
-        break;
-
-    default:
-        // Safety: snap to a known state
-        m->state = MENU_STATE_COLOR_SELECT;
-        break;
+// Write data to the communication channel. Does not wait for data.
+// *buf: pointer to data buffer
+// size: size of data in bytes to write
+// Return number of bytes written, or negative number if error.
+int32_t com_write(const void *buf, uint32_t size){
+    if (!buf || size == 0){
+        return -1;
     }
+    return net_send(NULL, buf, size, 0); 
 }
 
-void menu_draw(menu_t *m) {
-    if (!m) return;
-
-    int y = 0;
-    switch (m->state) {
-    case MENU_STATE_COLOR_SELECT:
-        lcd_drawString(0, y, "Select Color", WHITE); y += 12;
-        lcd_drawString(0, y, (m->color == COLOR_BLUE) ? "BLUE" : "RED", WHITE); y += 12;
-        lcd_drawString(0, y, "LEFT/RIGHT: toggle", WHITE); y += 12;
-        lcd_drawString(0, y, "SELECT: ready", WHITE);
-        break;
-
-    case MENU_STATE_READY:
-        lcd_drawString(0, y, "Ready!", WHITE); y += 12;
-        lcd_drawString(0, y, color_name(m->color), WHITE);
-        break;
+// Read data from the communication channel. Does not wait for data.
+// *buf: pointer to data buffer
+// size: size of data in bytes to read
+// Return number of bytes read, or negative number if error.
+int32_t com_read(void *buf, uint32_t size){
+    if (!buf || size == 0){
+        return -1;
     }
-}
-
-bool menu_is_ready(menu_t *m) {
-    return m && m->both_ready;
+    uint8_t src[NET_ALEN];
+    return net_recv(src, buf, size, 0); 
 }
 
 // Game protocol helpers

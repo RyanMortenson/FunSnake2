@@ -1,6 +1,9 @@
 #ifndef GAME_H_
 #define GAME_H_
 
+#include "menu.h"
+
+
 // Initialize the game control logic.
 // This function initializes all missiles, planes, stats, etc.
 void game_init(void);
@@ -13,5 +16,4 @@ void game_tick(void);
 
 void game_set_menu(menu_t* menu);
 
-#endif // GAME_H_
 #endif // GAME_H_
