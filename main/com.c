@@ -1,60 +1,83 @@
-#include "freertos/FreeRTOS.h"
-#include "hw.h"
+// menu.c — ultra-minimal color picker FSM
+#include "menu.h"
 #include "lcd.h"
-#include "net.h"
-#include "com.h"
-#include "esp_log.h"
 
-#define GROUP_ID 1
-#define GROUP_WAIT 4000 // ms
-#define MAX_STR 32
+#ifndef WHITE
+#define WHITE 0xFFFF
+#endif
 
-static const char *TAG = "test_net";
+// Map these bits to your board in main() and pass them to menu_update()
+#define BTN_LEFT    (1u << 0)
+#define BTN_RIGHT   (1u << 1)
+#define BTN_SELECT  (1u << 4)
+#define BTN_BACK    (1u << 5)
 
-typedef struct {
-	uint32_t i;
-	char str[MAX_STR];
-} event_t;
-
-// Receive packets and display contents.
-
-
-//initialize communication
-int32_t com_init(void){
-    int32_t ret;
-
-	ESP_LOGI(TAG, "app_main");
-
-	// Initialize network.
-	ret = net_init();
-  
-
-    // Open group registration.
-    ret = net_group_open(GROUP_ID);
-	lcd_drawString(0,0,"Wait for devices to join group...", WHITE);
-    vTaskDelay(pdMS_TO_TICKS(GROUP_WAIT));
-	ret = net_group_close();
-    return ret;
+static inline const char* color_name(color_selection_t c) {
+    return (c == COLOR_BLUE) ? "BLUE" : "RED";
 }
 
-// deinitialize communication
-int32_t com_deinit(void){
-    return net_deinit();
+void menu_init(menu_t *m) {
+    if (!m) return;
+    m->state      = MENU_STATE_COLOR_SELECT;  // only two states used
+    m->color      = COLOR_BLUE;               // default
+    m->both_ready = false;                    // “ready” = user confirmed
 }
 
-// Write data to the communication channel. Does not wait for data.
-// *buf: pointer to data buffer
-// size: size of data in bytes to write
-// Return number of bytes written, or negative number if error.
-int32_t com_write(const void *buf, uint32_t size){
-    return net_send(NULL, buf, size, 0);
+void menu_set_color(menu_t *m, color_selection_t c) {
+    if (!m) return;
+    m->color = c;
 }
 
-// Read data from the communication channel. Does not wait for data.
-// *buf: pointer to data buffer
-// size: size of data in bytes to read
-// Return number of bytes read, or negative number if error.
-int32_t com_read(void *buf, uint32_t size){
-    uint8_t src[NET_ALEN];
-    return net_recv(src, buf, size, 0);
+void menu_update(menu_t *m, uint8_t input) {
+    if (!m) return;
+
+    switch (m->state) {
+    case MENU_STATE_COLOR_SELECT:
+        // Toggle color with LEFT/RIGHT
+        if (input & (BTN_LEFT | BTN_RIGHT)) {
+            m->color = (m->color == COLOR_BLUE) ? COLOR_RED : COLOR_BLUE;
+        }
+        // SELECT -> ready
+        if (input & BTN_SELECT) {
+            m->both_ready = true;
+            m->state = MENU_STATE_READY;
+        }
+        break;
+
+    case MENU_STATE_READY:
+        // Optional: BACK to un-ready and change color again
+        if (input & BTN_BACK) {
+            m->both_ready = false;
+            m->state = MENU_STATE_COLOR_SELECT;
+        }
+        break;
+
+    default:
+        // Safety: snap to a known state
+        m->state = MENU_STATE_COLOR_SELECT;
+        break;
+    }
+}
+
+void menu_draw(menu_t *m) {
+    if (!m) return;
+
+    int y = 0;
+    switch (m->state) {
+    case MENU_STATE_COLOR_SELECT:
+        lcd_drawString(0, y, "Select Color", WHITE); y += 12;
+        lcd_drawString(0, y, (m->color == COLOR_BLUE) ? "BLUE" : "RED", WHITE); y += 12;
+        lcd_drawString(0, y, "LEFT/RIGHT: toggle", WHITE); y += 12;
+        lcd_drawString(0, y, "SELECT: ready", WHITE);
+        break;
+
+    case MENU_STATE_READY:
+        lcd_drawString(0, y, "Ready!", WHITE); y += 12;
+        lcd_drawString(0, y, color_name(m->color), WHITE);
+        break;
+    }
+}
+
+bool menu_is_ready(menu_t *m) {
+    return m && m->both_ready;
 }
