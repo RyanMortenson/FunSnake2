@@ -1,4 +1,4 @@
-// menu.c — ultra-minimal color picker FSM
+// com.c — ultra-minimal color picker FSM
 #include "menu.h"
 #include "lcd.h"
 
