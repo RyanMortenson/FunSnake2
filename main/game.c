@@ -10,12 +10,30 @@
 #include "pin.h"
 #include "nav.h"
 #include "sound.h"
-#include "sprites/all_sprites.h"
-#include "audio/Chomp.h"
-#include "audio/Crash.h"
-#include "audio/LevelUp.h"
+#include "../audio/Chomp.h"
+#include "../audio/Crash.h"
 #include "config.h"
 #include "menu.h"
+
+#include "../sprites/apple.h"
+#include "../sprites/bluebody.h"
+#include "../sprites/bluedown.h"
+#include "../sprites/blueleft.h"
+#include "../sprites/blueright.h"
+#include "../sprites/blueup.h"
+#include "../sprites/cherry.h"
+#include "../sprites/goldapple.h"
+#include "../sprites/graybody.h"
+#include "../sprites/graydown.h"
+#include "../sprites/grayleft.h"
+#include "../sprites/grayright.h"
+#include "../sprites/grayup.h"
+#include "../sprites/greenapple.h"
+#include "../sprites/greenbody.h"
+#include "../sprites/greendown.h"
+#include "../sprites/greenleft.h"
+#include "../sprites/greenright.h"
+#include "../sprites/greenup.h"
 
 #define TOTAL_COLUMNS 20
 #define TOTAL_ROWS 15
@@ -37,27 +55,27 @@ static snake_t snake1;
 static snake_t snake2;
 static coord_t fruit_x;
 static coord_t fruit_y;
-static uint8_t peer_snake_dir = RIGHT;  // track peer's snake direction
+static uint8_t peer_snake_dir = 2;  // track peer's snake direction
 
 //draw UI for wait screen
 void draw_wait_screen(){
-    lcd_clear();
+    lcd_fillScreen(WHITE);
 
     // TODO: use your LCD text function
-    lcd_draw_text(30, 40, "SNAKE GAME", LCD_WHITE);
-    lcd_draw_text(20, 80, "Press START to begin", LCD_WHITE);
+    lcd_drawString(30, 40, "SNAKE GAME", BLACK);
+    lcd_drawString(20, 80, "Press START to begin", BLACK);
 }
 
 //draw game over screen
 void draw_game_over_screen() {
-    lcd_clear();
-    lcd_draw_text(30, 60, "GAME OVER", LCD_RED);
-    lcd_draw_text(10, 100, "Press START to restart", LCD_WHITE);
+    lcd_fillScreen(WHITE);
+    lcd_drawString(30, 60, "GAME OVER", RED);
+    lcd_drawString(10, 100, "Press START to restart", BLACK);
 }
 
 //draws the board to the screen
 void draw_board() {
-    lcd_clear();
+    lcd_fillScreen(WHITE);
 
     // Draw fruit
     lcd_drawRGBBitmap(fruit_x * 16, fruit_y * 16, (const color_t *)apple, APPLE_W, APPLE_H);
@@ -145,7 +163,7 @@ void draw_board() {
 
 static void play_sound_effect(const int16_t *samples, uint32_t sample_count, uint32_t sample_rate) {
     if (samples && sample_count > 0 && sample_rate > 0) {
-        sound_play(samples, sample_count, sample_rate);
+        sound_start(samples, sizeof(samples), true);
     }
 }
 
@@ -222,9 +240,6 @@ void game_tick(void){
                 snake_init(&snake1, 1);
                 snake_init(&snake2, 2);
                 spawn_fruit();
-                play_sound_effect(ESM_Ambient_Game_Level_Up_Soft_Tone_1_Upgrade_Unlock_Bonus_Arcade_Fun,
-                                  ESM_AMBIENT_GAME_LEVEL_UP_SOFT_TONE_1_UPGRADE_UNLOCK_BONUS_ARCADE_FUN_SAMPLES,
-                                  ESM_AMBIENT_GAME_LEVEL_UP_SOFT_TONE_1_UPGRADE_UNLOCK_BONUS_ARCADE_FUN_SAMPLE_RATE);
                 currentState = playing_st;
             }
             break;

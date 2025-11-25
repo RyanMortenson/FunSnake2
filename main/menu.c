@@ -15,10 +15,10 @@
 #define BTN_BACK    (1u << 5)
 
 // -------- tiny 2-byte protocol: {type, color} --------------------------------------
-typedef enum {
-    MENU_MSG_READY  = 1,
-    MENU_MSG_CANCEL = 2
-} menu_msg_type_t;
+// typedef enum {
+//     MENU_MSG_READY  = 1,
+//     MENU_MSG_CANCEL = 2
+// } menu_msg_type_t;
 
 typedef struct __attribute__((packed)) {
     uint8_t type;   // menu_msg_type_t
