@@ -4,11 +4,6 @@
 #define START_Y 8
 #define P1_START_X 3
 #define P2_START_X 18
-#define UP 1
-#define RIGHT 2
-#define DOWN 3
-#define LEFT 4
-
 //add to snakes head
 void snake_push_head(snake_queue_t *q, coord_t x, coord_t y){
     snake_block_t *node = malloc(sizeof(*node));
@@ -33,12 +28,12 @@ void snake_init(snake_t *snake, uint8_t player){
     snake->player = player;
 
     if (player == 1){
-        snake->direction = RIGHT;
+        snake->direction = SNAKE_DIR_RIGHT;
         snake_push_head(&snake->queue, P1_START_X-2, START_Y);  // tail
         snake_push_head(&snake->queue, P1_START_X-1, START_Y);
         snake_push_head(&snake->queue, P1_START_X, START_Y);
     } else if (player == 2){
-        snake->direction = LEFT;
+        snake->direction = SNAKE_DIR_LEFT;
         snake_push_head(&snake->queue, P2_START_X+2, START_Y);  // tail
         snake_push_head(&snake->queue, P2_START_X+1, START_Y);
         snake_push_head(&snake->queue, P2_START_X, START_Y);
@@ -70,13 +65,13 @@ void snake_pop_tail(snake_queue_t *q){
 
 //move snake
 void snake_move(snake_t *snake, bool ate_fruit){
-    if (snake->direction == UP){
+    if (snake->direction == SNAKE_DIR_UP){
         snake_push_head(&snake->queue, snake->queue.head->block_x, snake->queue.head->block_y -1);
-    } else if (snake->direction == DOWN){
+    } else if (snake->direction == SNAKE_DIR_DOWN){
         snake_push_head(&snake->queue, snake->queue.head->block_x, snake->queue.head->block_y +1);
-    } else if (snake->direction == RIGHT){
+    } else if (snake->direction == SNAKE_DIR_RIGHT){
         snake_push_head(&snake->queue, snake->queue.head->block_x + 1, snake->queue.head->block_y);
-    } else if (snake->direction == LEFT){
+    } else if (snake->direction == SNAKE_DIR_LEFT){
         snake_push_head(&snake->queue, snake->queue.head->block_x - 1, snake->queue.head->block_y);
     }
     if (!ate_fruit){
@@ -85,11 +80,11 @@ void snake_move(snake_t *snake, bool ate_fruit){
 }
 
 //changes snake direction
-void snake_change_direction(snake_t *snake, uint8_t new_direction){
-    if ((snake->direction == UP && new_direction == DOWN) ||
-        (snake->direction == DOWN && new_direction == UP) ||
-        (snake->direction == LEFT && new_direction == RIGHT) ||
-        (snake->direction == RIGHT && new_direction == LEFT)) {
+void snake_change_direction(snake_t *snake, snake_direction_t new_direction){
+    if ((snake->direction == SNAKE_DIR_UP && new_direction == SNAKE_DIR_DOWN) ||
+        (snake->direction == SNAKE_DIR_DOWN && new_direction == SNAKE_DIR_UP) ||
+        (snake->direction == SNAKE_DIR_LEFT && new_direction == SNAKE_DIR_RIGHT) ||
+        (snake->direction == SNAKE_DIR_RIGHT && new_direction == SNAKE_DIR_LEFT)) {
         return;
     }
     snake->direction = new_direction;
