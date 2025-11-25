@@ -1,3 +1,5 @@
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h> // rand
 
@@ -7,6 +9,11 @@
 #include "lcd.h"
 #include "pin.h"
 #include "nav.h"
+#include "sound.h"
+#include "sprites/all_sprites.h"
+#include "audio/Chomp.h"
+#include "audio/Crash.h"
+#include "audio/LevelUp.h"
 
 #define TOTAL_COLUMNS HW_LCD_W/16  //20 Total
 #define TOTAL_ROWS HW_LCD_H/16     //15 total
@@ -47,21 +54,92 @@ void draw_board() {
     lcd_clear();
 
     // Draw fruit
-    // TODO: replace with your draw-square function
-    lcd_draw_rect(fruit_x * 16, fruit_y * 16, 16, 16, LCD_RED);
+    lcd_drawRGBBitmap(fruit_x * 16, fruit_y * 16, (const color_t *)apple, APPLE_W, APPLE_H);
 
     // Draw snake 1
     snake_block_t *b = snake1.queue.head;
-    while (b) {
-        lcd_draw_rect(b->block_x * 16, b->block_y * 16, 16, 16, LCD_GREEN);
+    if (b) {
+        const uint16_t *head_bitmap = NULL;
+        coord_t head_w = BLUEUP_W;
+        coord_t head_h = BLUEUP_H;
+
+        switch (snake1.direction) {
+            case SNAKE_DIR_UP:
+                head_bitmap = blueup;
+                head_w = BLUEUP_W;
+                head_h = BLUEUP_H;
+                break;
+            case SNAKE_DIR_RIGHT:
+                head_bitmap = blueright;
+                head_w = BLUERIGHT_W;
+                head_h = BLUERIGHT_H;
+                break;
+            case SNAKE_DIR_DOWN:
+                head_bitmap = bluedown;
+                head_w = BLUEDOWN_W;
+                head_h = BLUEDOWN_H;
+                break;
+            case SNAKE_DIR_LEFT:
+            default:
+                head_bitmap = blueleft;
+                head_w = BLUELEFT_W;
+                head_h = BLUELEFT_H;
+                break;
+        }
+
+        lcd_drawRGBBitmap(b->block_x * 16, b->block_y * 16, (const color_t *)head_bitmap, head_w, head_h);
         b = b->next;
+
+        while (b) {
+            lcd_drawRGBBitmap(b->block_x * 16, b->block_y * 16, (const color_t *)bluebody, BLUEBODY_W, BLUEBODY_H);
+            b = b->next;
+        }
     }
 
     // Draw snake 2
     b = snake2.queue.head;
-    while (b) {
-        lcd_draw_rect(b->block_x * 16, b->block_y * 16, 16, 16, LCD_BLUE);
+    if (b) {
+        const uint16_t *head_bitmap = NULL;
+        coord_t head_w = GRAYUP_W;
+        coord_t head_h = GRAYUP_H;
+
+        switch (snake2.direction) {
+            case SNAKE_DIR_UP:
+                head_bitmap = grayup;
+                head_w = GRAYUP_W;
+                head_h = GRAYUP_H;
+                break;
+            case SNAKE_DIR_RIGHT:
+                head_bitmap = grayright;
+                head_w = GRAYRIGHT_W;
+                head_h = GRAYRIGHT_H;
+                break;
+            case SNAKE_DIR_DOWN:
+                head_bitmap = graydown;
+                head_w = GRAYDOWN_W;
+                head_h = GRAYDOWN_H;
+                break;
+            case SNAKE_DIR_LEFT:
+            default:
+                head_bitmap = grayleft;
+                head_w = GRAYLEFT_W;
+                head_h = GRAYLEFT_H;
+                break;
+        }
+
+        lcd_drawRGBBitmap(b->block_x * 16, b->block_y * 16, (const color_t *)head_bitmap, head_w, head_h);
         b = b->next;
+
+        while (b) {
+            lcd_drawRGBBitmap(b->block_x * 16, b->block_y * 16, (const color_t *)graybody, GRAYBODY_W, GRAYBODY_H);
+            b = b->next;
+        }
+    }
+}
+
+static void play_sound_effect(const int16_t *samples, uint32_t sample_count, uint32_t sample_rate) {
+    if (samples && sample_count > 0 && sample_rate > 0) {
+        sound_play(samples, sample_count, sample_rate);
     }
 }
 
@@ -128,6 +206,9 @@ void game_tick(void){
                 snake_init(&snake1, 1);
                 snake_init(&snake2, 2);
                 spawn_fruit();
+                play_sound_effect(ESM_Ambient_Game_Level_Up_Soft_Tone_1_Upgrade_Unlock_Bonus_Arcade_Fun,
+                                  ESM_AMBIENT_GAME_LEVEL_UP_SOFT_TONE_1_UPGRADE_UNLOCK_BONUS_ARCADE_FUN_SAMPLES,
+                                  ESM_AMBIENT_GAME_LEVEL_UP_SOFT_TONE_1_UPGRADE_UNLOCK_BONUS_ARCADE_FUN_SAMPLE_RATE);
                 currentState = playing_st;
             }
             break;
@@ -145,10 +226,10 @@ void game_tick(void){
             int dr = r - prev_r;
             int dc = c - prev_c;
 
-            if (dc > 0) snake_change_direction(&snake1, RIGHT);
-            else if (dc < 0) snake_change_direction(&snake1, LEFT);
-            if (dr > 0) snake_change_direction(&snake1, DOWN);
-            else if (dr < 0) snake_change_direction(&snake1, UP);
+            if (dc > 0) snake_change_direction(&snake1, SNAKE_DIR_RIGHT);
+            else if (dc < 0) snake_change_direction(&snake1, SNAKE_DIR_LEFT);
+            if (dr > 0) snake_change_direction(&snake1, SNAKE_DIR_DOWN);
+            else if (dr < 0) snake_change_direction(&snake1, SNAKE_DIR_UP);
 
             prev_r = r;
             prev_c = c;
@@ -167,6 +248,9 @@ void game_tick(void){
 
             if (p1_ate || p2_ate) {
                 spawn_fruit();
+                play_sound_effect(PFS2_Carrot_Chomp_7,
+                                  PFS2_CARROT_CHOMP_7_SAMPLES,
+                                  PFS2_CARROT_CHOMP_7_SAMPLE_RATE);
             }
 
             // COLLISION DETECTION
@@ -175,6 +259,9 @@ void game_tick(void){
                 snake_collision(&snake1, &snake2) ||
                 snake_collision(&snake2, &snake1)) {
 
+                play_sound_effect(CrashAuto_BW_17108,
+                                  CRASHAUTO_BW_17108_SAMPLES,
+                                  CRASHAUTO_BW_17108_SAMPLE_RATE);
                 currentState = game_over_st;
                 break;
             }
@@ -189,7 +276,7 @@ void game_tick(void){
             if (hw_buttons_start_pressed()) {  // restart
                 currentState = init_st;
             }
-            break:
+            break;
     }
-    
+
 }
