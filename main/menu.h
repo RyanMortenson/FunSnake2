@@ -30,4 +30,23 @@ void menu_draw(menu_t *menu);
 void menu_set_color(menu_t *menu, color_selection_t color);
 bool menu_is_ready(menu_t *menu);
 
+// Game protocol messages
+typedef enum {
+    MENU_MSG_READY  = 1,
+    MENU_MSG_CANCEL = 2,
+    GAME_MSG_MOVE   = 10,   // Snake direction + position
+    GAME_MSG_FRUIT  = 11    // Fruit spawn location
+} msg_type_t;
+
+typedef struct __attribute__((packed)) {
+    uint8_t type;           // msg_type_t
+    uint8_t dir;            // direction (UP/DOWN/LEFT/RIGHT)
+    uint8_t x, y;           // snake head position or fruit position
+} game_msg_t;
+
+// Game protocol helpers
+void com_send_move(uint8_t dir, uint8_t x, uint8_t y);
+void com_send_fruit(uint8_t x, uint8_t y);
+game_msg_t* com_recv_game(void);
+
 #endif // MENU_H

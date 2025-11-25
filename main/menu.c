@@ -28,6 +28,7 @@ typedef struct __attribute__((packed)) {
 // local shadow (not exposed in menu.h)
 static bool s_local_ready = false;
 static bool s_peer_ready  = false;
+static color_selection_t s_peer_color = -1;  // -1 = unknown
 static inline const char* color_name(color_selection_t c) {
     return (c == COLOR_BLUE) ? "BLUE" : "RED";
 }
@@ -42,8 +43,14 @@ static void menu_poll_peer(menu_t *menu) {
     int32_t n = com_read(&m, sizeof(m));
     if (n != (int32_t)sizeof(m)) return; // ignore nothing/short reads
 
-    if (m.type == MENU_MSG_READY)  s_peer_ready = true;
-    if (m.type == MENU_MSG_CANCEL) s_peer_ready = false;
+    if (m.type == MENU_MSG_READY) {
+        s_peer_ready = true;
+        s_peer_color = (color_selection_t)m.color;  // lock their color
+    }
+    if (m.type == MENU_MSG_CANCEL) {
+        s_peer_ready = false;
+        s_peer_color = -1;  // unlock
+    }
 
     menu->both_ready = (s_local_ready && s_peer_ready);
     if (menu->both_ready) menu->state = MENU_STATE_READY;
@@ -57,6 +64,7 @@ void menu_init(menu_t *menu) {
     menu->both_ready = false;
     s_local_ready    = false;
     s_peer_ready     = false;
+    s_peer_color     = -1;
 }
 
 void menu_set_color(menu_t *menu, color_selection_t color) {
@@ -74,6 +82,10 @@ void menu_update(menu_t *menu, uint8_t input) {
     case MENU_STATE_COLOR_SELECT:
         if (input & (BTN_LEFT | BTN_RIGHT)) {
             menu->color = (menu->color == COLOR_BLUE) ? COLOR_RED : COLOR_BLUE;
+            // skip if peer already took this color
+            if (s_peer_ready && menu->color == s_peer_color) {
+                menu->color = (menu->color == COLOR_BLUE) ? COLOR_RED : COLOR_BLUE;
+            }
         }
         if (input & BTN_SELECT) {
             s_local_ready    = true;
@@ -117,6 +129,11 @@ void menu_draw(menu_t *menu) {
         char line[24];
         snprintf(line, sizeof(line), "> %s <", color_name(menu->color));
         lcd_drawString(0, y, line, WHITE); y += 12;
+        if (s_peer_ready) {
+            char taken[24];
+            snprintf(taken, sizeof(taken), "Peer took: %s", color_name(s_peer_color));
+            lcd_drawString(0, y, taken, WHITE); y += 12;
+        }
         lcd_drawString(0, y, "Left/Right: Toggle", WHITE); y += 12;
         lcd_drawString(0, y, "A: Ready", WHITE);
         break;

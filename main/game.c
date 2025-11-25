@@ -1,11 +1,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h> // rand
+#include <stdlib.h>
 
 #include "game.h"
 #include "snake.h"
-#include "hw.gc.h"
+#include "hw.h"
 #include "lcd.h"
 #include "pin.h"
 #include "nav.h"
@@ -14,9 +14,11 @@
 #include "audio/Chomp.h"
 #include "audio/Crash.h"
 #include "audio/LevelUp.h"
+#include "config.h"
+#include "menu.h"
 
-#define TOTAL_COLUMNS HW_LCD_W/16  //20 Total
-#define TOTAL_ROWS HW_LCD_H/16     //15 total
+#define TOTAL_COLUMNS 20
+#define TOTAL_ROWS 15
 
 typedef enum {
     init_st,
@@ -28,10 +30,14 @@ typedef enum {
 game_state_t currentState;
 
 // Game state variables
+static uint8_t my_player_id; 
+static bool i_am_host;
+static menu_t* g_menu = NULL;  // Global menu pointer
 static snake_t snake1;
 static snake_t snake2;
 static coord_t fruit_x;
 static coord_t fruit_y;
+static uint8_t peer_snake_dir = RIGHT;  // track peer's snake direction
 
 //draw UI for wait screen
 void draw_wait_screen(){
@@ -190,6 +196,11 @@ void game_init(void){
 
 }
 
+// Add this function to set menu from main
+void game_set_menu(menu_t* menu) {
+    g_menu = menu;
+}
+
 // Update the game control logic.
 // detects collisions, and updates statistics.
 void game_tick(void){
@@ -202,7 +213,12 @@ void game_tick(void){
             break;
 
         case waiting_st:
+            //UPDATE PLAYER ID AND HOST HERE
             if (!pin_get_level(HW_BTN_START)) {
+                // Assign player ID based on color
+                my_player_id = (g_menu && g_menu->color == COLOR_BLUE) ? 1 : 2;
+                i_am_host = true;
+                
                 snake_init(&snake1, 1);
                 snake_init(&snake2, 2);
                 spawn_fruit();
@@ -214,27 +230,54 @@ void game_tick(void){
             break;
 
         case playing_st:
+            // --- POLL PEER FOR UPDATES ---
+            game_msg_t* peer_msg = com_recv_game();
+            if (peer_msg) {
+                if (peer_msg->type == GAME_MSG_MOVE) {
+                    peer_snake_dir = peer_msg->dir;
+                    snake_t* peer_snake = (my_player_id == 1 ? &snake2 : &snake1);
+                    snake_change_direction(peer_snake, peer_msg->dir);
+                } else if (peer_msg->type == GAME_MSG_FRUIT) {
+                    fruit_x = peer_msg->x;
+                    fruit_y = peer_msg->y;
+                }
+            }
+
             // --- UPDATE JOYSTICK NAVIGATOR ---
             nav_tick();
 
             int8_t r, c;
             nav_get_loc(&r, &c);
 
-            static int8_t prev_r = GRID_R/2;
-            static int8_t prev_c = GRID_C/2;
+            static int8_t prev_r = 10;  // CONFIG_BOARD_R/2
+            static int8_t prev_c = 10;  // CONFIG_BOARD_C/2
 
             int dr = r - prev_r;
             int dc = c - prev_c;
 
-            if (dc > 0) snake_change_direction(&snake1, SNAKE_DIR_RIGHT);
-            else if (dc < 0) snake_change_direction(&snake1, SNAKE_DIR_LEFT);
-            if (dr > 0) snake_change_direction(&snake1, SNAKE_DIR_DOWN);
-            else if (dr < 0) snake_change_direction(&snake1, SNAKE_DIR_UP);
+            snake_t* mySnake = (my_player_id == 1 ? &snake1 : &snake2);
+            uint8_t new_dir = mySnake->direction;  // default: keep direction
+
+            if (dc > 0) {
+                new_dir = RIGHT;
+                snake_change_direction(mySnake, RIGHT);
+            } else if (dc < 0) {
+                new_dir = LEFT;
+                snake_change_direction(mySnake, LEFT);
+            }
+            if (dr > 0) {
+                new_dir = DOWN;
+                snake_change_direction(mySnake, DOWN);
+            } else if (dr < 0) {
+                new_dir = UP;
+                snake_change_direction(mySnake, UP);
+            }
 
             prev_r = r;
             prev_c = c;
-            // TODO: read controls to change directions
-            // e.g. snake_change_direction(&snake1, DIR_UP);
+
+            // Send my direction to peer
+            com_send_move(new_dir, mySnake->queue.head->block_x, mySnake->queue.head->block_y);
 
             // Move snakes
             bool p1_ate = (snake1.queue.head->block_x == fruit_x &&
@@ -246,11 +289,12 @@ void game_tick(void){
             snake_move(&snake1, p1_ate);
             snake_move(&snake2, p2_ate);
 
-            if (p1_ate || p2_ate) {
+            if (i_am_host && (p1_ate || p2_ate)) {
                 spawn_fruit();
                 play_sound_effect(PFS2_Carrot_Chomp_7,
                                   PFS2_CARROT_CHOMP_7_SAMPLES,
                                   PFS2_CARROT_CHOMP_7_SAMPLE_RATE);
+                com_send_fruit(fruit_x, fruit_y);
             }
 
             // COLLISION DETECTION
@@ -273,7 +317,7 @@ void game_tick(void){
         case game_over_st:
             draw_game_over_screen();
 
-            if (hw_buttons_start_pressed()) {  // restart
+            if (!pin_get_level(HW_BTN_START)) {  // restart
                 currentState = init_st;
             }
             break;
