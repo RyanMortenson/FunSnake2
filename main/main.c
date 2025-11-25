@@ -10,6 +10,9 @@
 #include "sound.h"
 #include "pin.h"
 #include "config.h"
+#include "com.h"
+#include "game.h"
+#include "menu.h"
 
 
 static const char *TAG = "lab07";

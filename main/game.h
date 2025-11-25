@@ -11,4 +11,7 @@ void game_init(void);
 // detects collisions, and updates statistics.
 void game_tick(void);
 
+void game_set_menu(menu_t* menu);
+
+#endif // GAME_H_
 #endif // GAME_H_
