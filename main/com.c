@@ -81,3 +81,22 @@ void menu_draw(menu_t *m) {
 bool menu_is_ready(menu_t *m) {
     return m && m->both_ready;
 }
+
+// Game protocol helpers
+void com_send_move(uint8_t dir, uint8_t x, uint8_t y) {
+    game_msg_t m = { GAME_MSG_MOVE, dir, x, y };
+    com_write(&m, sizeof(m));
+}
+
+void com_send_fruit(uint8_t x, uint8_t y) {
+    game_msg_t m = { GAME_MSG_FRUIT, 0, x, y };
+    com_write(&m, sizeof(m));
+}
+
+// Returns NULL if no message, or pointer to game_msg_t if received
+game_msg_t* com_recv_game(void) {
+    static game_msg_t m;
+    int32_t n = com_read(&m, sizeof(m));
+    if (n != (int32_t)sizeof(m)) return NULL;
+    return &m;
+}

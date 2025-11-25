@@ -79,7 +79,12 @@ void app_main(void){
    lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
    CHK_RET(cursor_init(PER_MS));
    sound_init(SOUND_SAMPLE_RATE);
-   //game_init();
+   CHK_RET(com_init());
+   game_init();
+   
+   menu_t menu;
+   menu_init(&menu);
+   game_set_menu(&menu);  // Pass menu to game
 
 
    // Configure I/O pins for buttons
@@ -129,7 +134,7 @@ void app_main(void){
        #ifndef CONFIG_ERASE
            lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
        #endif // CONFIG_ERASE
-           //game_tick();
+           game_tick();
         cursor_tick();
         cursor_get_pos(&x, &y);
 		printf("x: %ld, y: %ld", x, y);

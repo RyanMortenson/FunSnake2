@@ -43,7 +43,7 @@ void snake_init(snake_t *snake, uint8_t player);
 void snake_pop_tail(snake_queue_t *q);
 
 //function that will move the snake one block forward
-void snake_move(snake_t *snake, coord_t new_x, coord_t new_y, bool ate_fruit);
+void snake_move(snake_t *snake, bool ate_fruit);
 
 //changed snakes direction
 void snake_change_direction(snake_t *snake, uint8_t new_direction);
