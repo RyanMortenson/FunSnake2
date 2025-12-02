@@ -59,7 +59,7 @@ static uint8_t peer_snake_dir = 2;  // track peer's snake direction
 
 //draw UI for wait screen
 void draw_wait_screen(){
-    lcd_fillScreen(WHITE);
+    lcd_fillScreen(BLACK);
 
     // TODO: use your LCD text function
     lcd_drawString(30, 40, "SNAKE GAME", BLACK);
@@ -68,14 +68,14 @@ void draw_wait_screen(){
 
 //draw game over screen
 void draw_game_over_screen() {
-    lcd_fillScreen(WHITE);
+    lcd_fillScreen(BLACK);
     lcd_drawString(30, 60, "GAME OVER", RED);
     lcd_drawString(10, 100, "Press START to restart", BLACK);
 }
 
 //draws the board to the screen
 void draw_board() {
-    lcd_fillScreen(WHITE);
+    lcd_fillScreen(BLACK);
 
     // Draw fruit
     lcd_drawRGBBitmap(fruit_x * 16, fruit_y * 16, (const color_t *)apple, APPLE_W, APPLE_H);
