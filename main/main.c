@@ -140,7 +140,6 @@ void app_main(void){
            game_tick();
         cursor_tick();
         cursor_get_pos(&x, &y);
-		printf("x: %ld, y: %ld", x, y);
 		t2 = esp_timer_get_time() - t1;
         if (t2 > tmax) tmax = t2;
    }

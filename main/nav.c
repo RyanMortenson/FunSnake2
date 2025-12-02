@@ -27,15 +27,15 @@ static float rloc, cloc; // Current navigator location as a float.
 // Return zero if successful, or non-zero otherwise.
 int32_t nav_init(uint32_t per)
 {
-	if (per == 0 || joy_init()) return -1;
-	uperiod = per; // Save period parameter
-	// Set defaults
-	nav_set_sensitivity(SEN_DEFAULT);
-	nav_set_threshold(THRESH_DEFAULT);
-	// Initialize the navigator location to the center of the grid.
-	rloc = GRID_R/2;
-	cloc = GRID_C/2;
-	return 0;
+	if (per == 0) return -1;
+        uperiod = per; // Save period parameter
+        // Set defaults
+        nav_set_sensitivity(SEN_DEFAULT);
+        nav_set_threshold(THRESH_DEFAULT);
+        // Initialize the navigator location to the center of the grid.
+        rloc = GRID_R/2;
+        cloc = GRID_C/2;
+        return 0;
 }
 
 // Update the navigator location based on the joystick displacement.
