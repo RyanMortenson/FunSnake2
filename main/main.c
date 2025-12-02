@@ -135,7 +135,6 @@ void app_main(void){
 
 
        #ifndef CONFIG_ERASE
-           lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
        #endif // CONFIG_ERASE
            game_tick();
         cursor_tick();
