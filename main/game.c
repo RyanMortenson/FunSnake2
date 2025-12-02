@@ -333,7 +333,7 @@ void game_tick(void){
             draw_game_over_screen();
 
             if (!pin_get_level(HW_BTN_START)) {  // restart
-                currentState = init_st;
+                currentState = waiting_st;
             }
             break;
     }
