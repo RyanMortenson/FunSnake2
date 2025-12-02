@@ -32,11 +32,11 @@ int32_t com_init(void){
     if (ret) {
 		return -1;
 	}
-    net_group_open(GROUP_ID);
+    ret = net_group_open(GROUP_ID);
     graphics_drawMessage("Waiting to join group...", CYAN, rgb565(0, 16, 42));
     vTaskDelay(pdMS_TO_TICKS(GROUP_WAIT));
-    net_group_close();
-    return 0;
+    ret = net_group_close();
+    return ret;
 }
 
 // Free resources used for communication.

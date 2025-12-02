@@ -78,7 +78,7 @@ void app_main(void){
 
    // Initialization
    lcd_init();
-   lcd_frameEnable();
+   
    lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
    CHK_RET(cursor_init(PER_MS));
    sound_init(SOUND_SAMPLE_RATE);
