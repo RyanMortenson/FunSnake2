@@ -137,11 +137,27 @@ void app_main(void){
        #ifndef CONFIG_ERASE
            lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
        #endif // CONFIG_ERASE
+       
+       // Read button inputs (map to bitmask for menu)
+       uint8_t input = 0;
+       if (!pin_get_level(HW_BTN_A)) input |= (1u << 4);      // SELECT
+       if (!pin_get_level(HW_BTN_B)) input |= (1u << 5);      // BACK
+       if (!pin_get_level(HW_BTN_OPTION)) input |= (1u << 0); // LEFT
+       if (!pin_get_level(HW_BTN_MENU)) input |= (1u << 1);   // RIGHT
+       
+       // Menu phase: show menu until both players ready
+       if (!menu_is_ready(&menu)) {
+           menu_update(&menu, input);
+           menu_draw(&menu);
+       } else {
+           // Game phase: run the game
            game_tick();
-        cursor_tick();
-        cursor_get_pos(&x, &y);
-		t2 = esp_timer_get_time() - t1;
-        if (t2 > tmax) tmax = t2;
+       }
+       
+       cursor_tick();
+       cursor_get_pos(&x, &y);
+       t2 = esp_timer_get_time() - t1;
+       if (t2 > tmax) tmax = t2;
    }
    printf("Handled %lu of %lu interrupts\n", isr_handled_count, isr_triggered_count);
    printf("WCET us:%llu\n", tmax);
