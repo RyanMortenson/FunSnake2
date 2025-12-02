@@ -14,6 +14,8 @@
 #include "game.h"
 #include "menu.h"
 
+#include "esp_heap_caps.h"
+
 
 static const char *TAG = "lab07";
 
@@ -55,6 +57,24 @@ void update() {
    isr_triggered_count++;
 }
 
+// WEIRD CHAT THING::
+
+static bool lcd_enable_framebuffer_if_possible(void) {
+   // Estimate using the actual panel dimensions from the LCD driver.
+   const size_t fb_needed = LCD_W * LCD_H * sizeof(color_t);
+   size_t largest_free = heap_caps_get_largest_free_block(MALLOC_CAP_DMA);
+
+   if (largest_free < fb_needed) {
+       ESP_LOGW(TAG, "Frame buffer skipped: need ~%d bytes, largest block %d bytes", (int)fb_needed, (int)largest_free);
+       return false;
+   }
+
+   lcd_frameEnable();
+   return true;
+}
+
+
+
 
 // Draw the cursor on the screen
 void cursor(coord_t x, coord_t y, color_t color)
@@ -78,7 +98,7 @@ void app_main(void){
 
    // Initialization
    lcd_init();
-   
+   lcd_enable_framebuffer_if_possible(); // Enable frame buffer mode
    lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
    CHK_RET(cursor_init(PER_MS));
    sound_init(SOUND_SAMPLE_RATE);
