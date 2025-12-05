@@ -62,6 +62,151 @@ static uint8_t peer_snake_dir = 2;  // track peer's snake direction
 
 static uint64_t last_move_time_us = 0;
 
+// Helper to check if a coordinate is occupied by a snake
+static bool snake_has_block(const snake_t *snake, coord_t x, coord_t y) {
+    const snake_block_t *b = snake->queue.head;
+    while (b) {
+        if (b->block_x == x && b->block_y == y) {
+            return true;
+        }
+        b = b->next;
+    }
+    return false;
+}
+
+static void clear_block(coord_t x, coord_t y) {
+    lcd_fillRect(x * 16, y * 16, 16, 16, BLACK);
+}
+
+static void draw_snake_body(const snake_t *snake, coord_t x, coord_t y) {
+    const uint16_t *body_bitmap = (snake->player == 1) ? bluebody : graybody;
+    coord_t body_w = (snake->player == 1) ? BLUEBODY_W : GRAYBODY_W;
+    coord_t body_h = (snake->player == 1) ? BLUEBODY_H : GRAYBODY_H;
+    lcd_drawRGBBitmap(x * 16, y * 16, (const color_t *)body_bitmap,
+                      body_w, body_h);
+}
+
+static void draw_snake_head(const snake_t *snake) {
+    const snake_block_t *head = snake->queue.head;
+    if (!head) {
+        return;
+    }
+
+    const uint16_t *head_bitmap = NULL;
+    coord_t head_w = BLUEUP_W;
+    coord_t head_h = BLUEUP_H;
+
+    if (snake->player == 1) {
+        switch (snake->direction) {
+            case SNAKE_DIR_UP:
+                head_bitmap = blueup;
+                head_w = BLUEUP_W;
+                head_h = BLUEUP_H;
+                break;
+            case SNAKE_DIR_RIGHT:
+                head_bitmap = blueright;
+                head_w = BLUERIGHT_W;
+                head_h = BLUERIGHT_H;
+                break;
+            case SNAKE_DIR_DOWN:
+                head_bitmap = bluedown;
+                head_w = BLUEDOWN_W;
+                head_h = BLUEDOWN_H;
+                break;
+            case SNAKE_DIR_LEFT:
+            default:
+                head_bitmap = blueleft;
+                head_w = BLUELEFT_W;
+                head_h = BLUELEFT_H;
+                break;
+        }
+    } else {
+        switch (snake->direction) {
+            case SNAKE_DIR_UP:
+                head_bitmap = grayup;
+                head_w = GRAYUP_W;
+                head_h = GRAYUP_H;
+                break;
+            case SNAKE_DIR_RIGHT:
+                head_bitmap = grayright;
+                head_w = GRAYRIGHT_W;
+                head_h = GRAYRIGHT_H;
+                break;
+            case SNAKE_DIR_DOWN:
+                head_bitmap = graydown;
+                head_w = GRAYDOWN_W;
+                head_h = GRAYDOWN_H;
+                break;
+            case SNAKE_DIR_LEFT:
+            default:
+                head_bitmap = grayleft;
+                head_w = GRAYLEFT_W;
+                head_h = GRAYLEFT_H;
+                break;
+        }
+    }
+
+    lcd_drawRGBBitmap(head->block_x * 16, head->block_y * 16,
+                      (const color_t *)head_bitmap, head_w, head_h);
+}
+
+static void draw_fruit(coord_t x, coord_t y) {
+    lcd_drawRGBBitmap(x * 16, y * 16, (const color_t *)apple, APPLE_W, APPLE_H);
+}
+
+static void draw_scores_if_needed(void) {
+    static int last_score1 = -1;
+    static int last_score2 = -1;
+
+    const int score1 = snake1.queue.size - 3;
+    const int score2 = snake2.queue.size - 3;
+
+    if (score1 == last_score1 && score2 == last_score2) {
+        return;
+    }
+
+    lcd_fillRect(0, 0, LCD_W, LCD_CHAR_H * 2, BLACK);
+
+    char snake1_score[23];
+    char snake2_score[23];
+    sprintf(snake1_score, "Blue Score: %d", score1);
+    sprintf(snake2_score, "Red Score: %d", score2);
+    lcd_drawString(20, 5, snake1_score, BLUE);
+    lcd_drawString(120, 5, snake2_score, RED);
+
+    last_score1 = score1;
+    last_score2 = score2;
+}
+
+static void draw_snake_full(const snake_t *snake) {
+    const snake_block_t *b = snake->queue.head;
+    if (!b) {
+        return;
+    }
+
+    draw_snake_head(snake);
+    b = b->next;
+    while (b) {
+        draw_snake_body(snake, b->block_x, b->block_y);
+        b = b->next;
+    }
+}
+
+static void update_snake_render(const snake_t *snake,
+                                coord_t prev_head_x,
+                                coord_t prev_head_y,
+                                coord_t prev_tail_x,
+                                coord_t prev_tail_y,
+                                bool tail_removed) {
+    if (snake->queue.size > 1) {
+        draw_snake_body(snake, prev_head_x, prev_head_y);
+    }
+    draw_snake_head(snake);
+    if (tail_removed) {
+        clear_block(prev_tail_x, prev_tail_y);
+    }
+}
+
 //draw UI for wait screen
 void draw_wait_screen(){
     lcd_fillScreen(BLACK);
@@ -89,93 +234,10 @@ void draw_game_over_screen() {
 void draw_board() {
     lcd_fillScreen(BLACK);
 
-    // Draw fruit
-    lcd_drawRGBBitmap(fruit_x * 16, fruit_y * 16, (const color_t *)apple, APPLE_W, APPLE_H);
-    char snake1_score[23];
-    char snake2_score[23];
-    sprintf(snake1_score, "Blue Score: %d", snake1.queue.size - 3);
-    sprintf(snake2_score, "Red Score: %d", snake2.queue.size - 3);
-    lcd_drawString(20, 5, snake1_score, BLUE);
-    lcd_drawString(120, 5, snake2_score, RED);
-    // Draw snake 1
-    snake_block_t *b = snake1.queue.head;
-    if (b) {
-        const uint16_t *head_bitmap = NULL;
-        coord_t head_w = BLUEUP_W;
-        coord_t head_h = BLUEUP_H;
-
-        switch (snake1.direction) {
-            case SNAKE_DIR_UP:
-                head_bitmap = blueup;
-                head_w = BLUEUP_W;
-                head_h = BLUEUP_H;
-                break;
-            case SNAKE_DIR_RIGHT:
-                head_bitmap = blueright;
-                head_w = BLUERIGHT_W;
-                head_h = BLUERIGHT_H;
-                break;
-            case SNAKE_DIR_DOWN:
-                head_bitmap = bluedown;
-                head_w = BLUEDOWN_W;
-                head_h = BLUEDOWN_H;
-                break;
-            case SNAKE_DIR_LEFT:
-            default:
-                head_bitmap = blueleft;
-                head_w = BLUELEFT_W;
-                head_h = BLUELEFT_H;
-                break;
-        }
-
-        lcd_drawRGBBitmap(b->block_x * 16, b->block_y * 16, (const color_t *)head_bitmap, head_w, head_h);
-        b = b->next;
-
-        while (b) {
-            lcd_drawRGBBitmap(b->block_x * 16, b->block_y * 16, (const color_t *)bluebody, BLUEBODY_W, BLUEBODY_H);
-            b = b->next;
-        }
-    }
-
-    // Draw snake 2
-    b = snake2.queue.head;
-    if (b) {
-        const uint16_t *head_bitmap = NULL;
-        coord_t head_w = GRAYUP_W;
-        coord_t head_h = GRAYUP_H;
-
-        switch (snake2.direction) {
-            case SNAKE_DIR_UP:
-                head_bitmap = grayup;
-                head_w = GRAYUP_W;
-                head_h = GRAYUP_H;
-                break;
-            case SNAKE_DIR_RIGHT:
-                head_bitmap = grayright;
-                head_w = GRAYRIGHT_W;
-                head_h = GRAYRIGHT_H;
-                break;
-            case SNAKE_DIR_DOWN:
-                head_bitmap = graydown;
-                head_w = GRAYDOWN_W;
-                head_h = GRAYDOWN_H;
-                break;
-            case SNAKE_DIR_LEFT:
-            default:
-                head_bitmap = grayleft;
-                head_w = GRAYLEFT_W;
-                head_h = GRAYLEFT_H;
-                break;
-        }
-
-        lcd_drawRGBBitmap(b->block_x * 16, b->block_y * 16, (const color_t *)head_bitmap, head_w, head_h);
-        b = b->next;
-
-        while (b) {
-            lcd_drawRGBBitmap(b->block_x * 16, b->block_y * 16, (const color_t *)graybody, GRAYBODY_W, GRAYBODY_H);
-            b = b->next;
-        }
-    }
+    draw_fruit(fruit_x, fruit_y);
+    draw_scores_if_needed();
+    draw_snake_full(&snake1);
+    draw_snake_full(&snake2);
     lcd_writeFrame();
 }
 
@@ -289,6 +351,20 @@ void game_tick(void){
         case playing_st:
             const uint64_t now_us = esp_timer_get_time();
             if ((now_us - last_move_time_us) >= GAME_MOVE_PERIOD_US) {
+                const coord_t prev_fruit_x = fruit_x;
+                const coord_t prev_fruit_y = fruit_y;
+                bool fruit_moved = false;
+
+                const coord_t p1_prev_head_x = snake1.queue.head->block_x;
+                const coord_t p1_prev_head_y = snake1.queue.head->block_y;
+                const coord_t p1_prev_tail_x = snake1.queue.tail->block_x;
+                const coord_t p1_prev_tail_y = snake1.queue.tail->block_y;
+
+                const coord_t p2_prev_head_x = snake2.queue.head->block_x;
+                const coord_t p2_prev_head_y = snake2.queue.head->block_y;
+                const coord_t p2_prev_tail_x = snake2.queue.tail->block_x;
+                const coord_t p2_prev_tail_y = snake2.queue.tail->block_y;
+
                 // --- POLL PEER FOR UPDATES ---
                 game_msg_t* peer_msg = com_recv_game();
                 if (peer_msg) {
@@ -299,6 +375,7 @@ void game_tick(void){
                     } else if (peer_msg->type == GAME_MSG_FRUIT) {
                         fruit_x = peer_msg->x;
                         fruit_y = peer_msg->y;
+                        fruit_moved = true;
                     }
                 }
 
@@ -349,6 +426,7 @@ void game_tick(void){
                 snake_move(&snake2, p2_ate);
 
                 if (i_am_host && (p1_ate || p2_ate)) {
+                    fruit_moved = true;
                     spawn_fruit();
                     play_sound_effect(PFS2_Carrot_Chomp_7,
                                     PFS2_CARROT_CHOMP_7_SAMPLES,
@@ -371,7 +449,21 @@ void game_tick(void){
                         menu_reset_sync(g_menu, true);
                     }
                 } else {
-                    draw_board();
+                    update_snake_render(&snake1, p1_prev_head_x, p1_prev_head_y,
+                                        p1_prev_tail_x, p1_prev_tail_y, !p1_ate);
+                    update_snake_render(&snake2, p2_prev_head_x, p2_prev_head_y,
+                                        p2_prev_tail_x, p2_prev_tail_y, !p2_ate);
+
+                    if (fruit_moved) {
+                        if (!snake_has_block(&snake1, prev_fruit_x, prev_fruit_y) &&
+                            !snake_has_block(&snake2, prev_fruit_x, prev_fruit_y)) {
+                            clear_block(prev_fruit_x, prev_fruit_y);
+                        }
+                        draw_fruit(fruit_x, fruit_y);
+                    }
+
+                    draw_scores_if_needed();
+                    lcd_writeFrame();
                     last_move_time_us = now_us;
                 }
             }
