@@ -41,6 +41,8 @@
 // Aim for roughly 10 frames per second to avoid overwhelming the LCD
 #define GAME_MOVE_PERIOD_US 100000
 
+static int16_t sfx_buffer[CRASHAUTO_BW_17108_SAMPLES];
+
 typedef enum {
     init_st,
     waiting_st,
@@ -241,31 +243,23 @@ void draw_board() {
     lcd_writeFrame();
 }
 
-static bool sound_effects_enabled = false;
+static bool sound_effects_enabled = true;
 
-static void play_sound_effect(const int16_t *samples, uint32_t sample_count, uint32_t sample_rate) {
-    if (!sound_effects_enabled) {
-        return;  // Temporarily muted per request
-    }
+static void play_sound_effect(const int16_t *samples,
+                              uint32_t sample_count,
+                              uint32_t sample_rate) {
+    if (!sound_effects_enabled) return;
 
     if (samples && sample_count > 0 && sample_rate > 0) {
-        const size_t sample_bytes = sample_count * sizeof(samples[0]);
-        int16_t *scaled = malloc(sample_bytes);
-
-        if (scaled) {
-            // Keep effects at a gentler level to avoid blasting the speaker.
-            const int8_t attenuation = 8;
-            for (uint32_t i = 0; i < sample_count; ++i) {
-                scaled[i] = samples[i] / attenuation;
-            }
-            sound_start(scaled, sample_bytes, true);
-            free(scaled);
-        } else {
-            // Fall back to original buffer if allocation fails
-            sound_start(samples, sample_bytes, true);
+        const int8_t attenuation = 8;  // or 50, 100, whatever you like
+        for (uint32_t i = 0; i < sample_count; ++i) {
+            sfx_buffer[i] = samples[i] / attenuation;
         }
+        sound_start(sfx_buffer, sample_count * sizeof(int16_t), true);
     }
 }
+
+
 //chooses random location on board to put fruit
 void spawn_fruit() {
     fruit_x = rand() % TOTAL_COLUMNS;
