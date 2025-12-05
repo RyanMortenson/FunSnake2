@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -248,6 +249,9 @@ static void play_sound_effect(const int16_t *samples,
         return;
     }
 
+    (void)sample_rate;  // Sample rate currently fixed by sound driver
+
+    const size_t sample_bytes = sample_count * sizeof(samples[0]);
     sound_start(samples, sample_bytes, false);
 }
 
