@@ -166,11 +166,22 @@ void draw_board() {
 
 static void play_sound_effect(const int16_t *samples, uint32_t sample_count, uint32_t sample_rate) {
     if (samples && sample_count > 0 && sample_rate > 0) {
+        
         const size_t sample_bytes = sample_count * sizeof(samples[0]);
-        sound_start(samples, sample_bytes, true);
+        int16_t *scaled = malloc(sample_bytes);
+
+        if (scaled) {
+            for (uint32_t i = 0; i < sample_count; ++i) {
+                scaled[i] = samples[i] / 4; // Reduce amplitude to lower volume
+            }
+            sound_start(scaled, sample_bytes, true);
+            free(scaled);
+        } else {
+            // Fall back to original buffer if allocation fails
+            sound_start(samples, sample_bytes, true);
+        }
     }
 }
-
 //chooses random location on board to put fruit
 void spawn_fruit() {
     fruit_x = rand() % TOTAL_COLUMNS;
