@@ -1,8 +1,8 @@
 
 #include <stdint.h>
 
-#define CHOMP_BITS_PER_SAMPLE 16
-#define CHOMP_SAMPLE_RATE 32000
-#define CHOMP_SAMPLES 34272
+#define BRUH2_BITS_PER_SAMPLE 8
+#define BRUH2_SAMPLE_RATE 24000
+#define BRUH2_SAMPLES 25704
 
-extern const int16_t chomp_samples[CHOMP_SAMPLES];
+extern const uint8_t bruh2[BRUH2_SAMPLES];
