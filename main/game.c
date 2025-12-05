@@ -41,8 +41,6 @@
 // Aim for roughly 10 frames per second to avoid overwhelming the LCD
 #define GAME_MOVE_PERIOD_US 100000
 
-static int16_t sfx_buffer[CRASHAUTO_BW_17108_SAMPLES];
-
 typedef enum {
     init_st,
     waiting_st,
@@ -265,7 +263,7 @@ static void play_sound_effect(const int16_t *samples,
         scaled[i] = samples[i] / attenuation;
     }
 
-    sound_start(scaled, sample_bytes, true);
+    sound_start(scaled, sample_bytes, false);
     free(scaled);
 }
 
