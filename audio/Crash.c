@@ -1,7 +1,7 @@
 
 #include <stdint.h>
 
-const int16_t sound-effect-car-crash-394903[] = {
+const int16_t sound_effect_car_crash_394903[] = {
       0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
