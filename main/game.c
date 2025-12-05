@@ -347,6 +347,9 @@ void game_tick(void){
                                     CRASHAUTO_BW_17108_SAMPLE_RATE);
                     currentState = game_over_st;
                     draw_game_over_screen();
+                    if (g_menu) {
+                        menu_reset_sync(g_menu, true);
+                    }
                     }
                 ticks_since_last_move = 0;
                 }
@@ -356,7 +359,9 @@ void game_tick(void){
             break;
 
         case game_over_st:
-            if (!pin_get_level(HW_BTN_START)) {  // restart
+            // After a round ends, wait for the menu handshake to complete again
+            // so both players press START before restarting.
+            if (g_menu && g_menu->both_ready) {
                 currentState = waiting_st;
             }
             break;

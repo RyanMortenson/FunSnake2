@@ -147,6 +147,28 @@ void menu_set_color(menu_t *menu, color_selection_t color) {
     menu->color = color;
 }
 
+// Reset synchronization flags so the next game requires fresh ready/start confirmation.
+// Optionally notify the peer to clear their state as well.
+void menu_reset_sync(menu_t *menu, bool notify_peer) {
+    if (!menu) return;
+
+    s_local_ready    = false;
+    s_local_start    = false;
+    s_peer_ready     = false;
+    s_peer_start     = false;
+    s_peer_color     = -1;
+    s_prev_input     = 0;
+    menu->both_ready = false;
+    menu->state      = MENU_STATE_COLOR_SELECT;
+
+    if (notify_peer) {
+        menu_send(MENU_MSG_START_CANCEL, menu->color);
+        menu_send(MENU_MSG_CANCEL, menu->color);
+    }
+
+    s_dirty = true;
+}
+
 void menu_update(menu_t *menu, uint8_t input) {
     if (!menu) return;
 

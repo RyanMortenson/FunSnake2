@@ -29,6 +29,7 @@ void menu_update(menu_t *menu, uint8_t input);
 void menu_draw(menu_t *menu);
 void menu_set_color(menu_t *menu, color_selection_t color);
 bool menu_is_ready(menu_t *menu);
+void menu_reset_sync(menu_t *menu, bool notify_peer);
 
 // Game protocol messages
 typedef enum {
