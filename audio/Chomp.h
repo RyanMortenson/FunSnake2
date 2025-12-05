@@ -1,8 +1,0 @@
-
-#include <stdint.h>
-
-#define CHOMP_155392_BITS_PER_SAMPLE 8
-#define CHOMP_155392_SAMPLE_RATE 24000
-#define CHOMP_155392_SAMPLES 23824
-
-extern const int16_t chomp_155392[CHOMP_155392_SAMPLES];
