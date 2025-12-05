@@ -39,7 +39,7 @@
 #define TOTAL_COLUMNS 20
 #define TOTAL_ROWS 15
 // Aim for roughly 10 frames per second to avoid overwhelming the LCD
-#define GAME_MOVE_PERIOD_US 100000
+#define GAME_MOVE_PERIOD_US 250000
 
 typedef enum {
     init_st,
@@ -273,16 +273,15 @@ void game_tick(void){
                 // Assign player ID based on color
                 my_player_id = (g_menu->color == COLOR_BLUE) ? 1 : 2;
                 i_am_host = (my_player_id == 1);
-
+                
+                
                 snake_init(&snake1, 1);
                 snake_init(&snake2, 2);
                 spawn_fruit();
-<<<<<<< ours
                 lcd_frameEnable();
-=======
+
                 last_move_time_us = esp_timer_get_time();
                 draw_board();
->>>>>>> theirs
                 currentState = playing_st;
             }
             break;
