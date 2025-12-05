@@ -248,23 +248,7 @@ static void play_sound_effect(const int16_t *samples,
         return;
     }
 
-    const size_t sample_bytes = sample_count * sizeof(samples[0]);
-    int16_t *scaled = malloc(sample_bytes);
-
-    if (!scaled) {
-        // Not enough heap — skip the sound entirely rather than blasting ears
-        printf("SFX: malloc failed for %u bytes, skipping sound\n",
-               (unsigned)sample_bytes);
-        return;
-    }
-
-    const int16_t attenuation = 8;  // or 20, 50, 100...
-    for (uint32_t i = 0; i < sample_count; ++i) {
-        scaled[i] = samples[i] / attenuation;
-    }
-
-    sound_start(scaled, sample_bytes, false);
-    free(scaled);
+    sound_start(samples, sample_bytes, false);
 }
 
 
