@@ -159,10 +159,10 @@ void app_main(void){
        
        // Read button inputs (map to bitmask for menu)
        uint8_t input = 0;
-       if (!pin_get_level(HW_BTN_A)) input |= (1u << 4);      // SELECT
-       if (!pin_get_level(HW_BTN_B)) input |= (1u << 5);      // BACK
-       if (!pin_get_level(HW_BTN_OPTION)) input |= (1u << 0); // LEFT
-       if (!pin_get_level(HW_BTN_MENU)) input |= (1u << 1);   // RIGHT
+        if (!pin_get_level(HW_BTN_A)) input |= (1u << 4);       // SELECT
+        if (!pin_get_level(HW_BTN_B)) input |= (1u << 5);       // BACK
+        if (!pin_get_level(HW_BTN_OPTION)) input |= (1u << 0);  // LEFT
+        if (!pin_get_level(HW_BTN_START)) input |= (1u << 1);   // RIGHT
        
        // Menu phase: show menu until both players ready
        if (!menu_is_ready(&menu)) {

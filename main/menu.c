@@ -3,9 +3,28 @@
 #include <stdio.h>
 #include "lcd.h"
 #include "com.h"
+#include "config.h"
 
 #ifndef WHITE
 #define WHITE 0xFFFF
+#endif
+#ifndef BLUE
+#define BLUE rgb565(0, 0, 31)
+#endif
+#ifndef RED
+#define RED rgb565(31, 0, 0)
+#endif
+#ifndef GREEN
+#define GREEN rgb565(0, 31, 0)
+#endif
+#ifndef CYAN
+#define CYAN rgb565(0, 31, 31)
+#endif
+#ifndef YELLOW
+#define YELLOW rgb565(31, 31, 0)
+#endif
+#ifndef LIGHTGREY
+#define LIGHTGREY rgb565(20, 20, 20)
 #endif
 
 // -------- input bitmask (these bits must match what main passes to menu_update) -----
@@ -29,8 +48,25 @@ typedef struct __attribute__((packed)) {
 static bool s_local_ready = false;
 static bool s_peer_ready  = false;
 static color_selection_t s_peer_color = -1;  // -1 = unknown
+static uint8_t s_prev_input = 0;             // edge detection
 static inline const char* color_name(color_selection_t c) {
     return (c == COLOR_BLUE) ? "BLUE" : "RED";
+}
+
+static void draw_panel(coord_t x, coord_t y, coord_t w, coord_t h, color_t base, const char *label, bool selected, bool disabled) {
+    color_t border = disabled ? rgb565(32, 0, 0) : base;
+    color_t fill   = disabled ? rgb565(12, 12, 12) : base;
+    lcd_fillRoundRect(x, y, w, h, 6, fill);
+    lcd_drawRoundRect(x, y, w, h, 6, border);
+    if (selected) {
+        lcd_drawRoundRect(x-2, y-2, w+4, h+4, 8, YELLOW);
+    }
+    coord_t tx = x + 8;
+    coord_t ty = y + (h/2 - LCD_CHAR_H);
+    lcd_drawString(tx, ty, label, WHITE);
+    if (disabled) {
+        lcd_drawString(tx, ty + LCD_CHAR_H + 2, "(TAKEN)", RED);
+    }
 }
 
 static void menu_send(uint8_t type, color_selection_t color) {
@@ -65,6 +101,7 @@ void menu_init(menu_t *menu) {
     s_local_ready    = false;
     s_peer_ready     = false;
     s_peer_color     = -1;
+    s_prev_input     = 0;
 }
 
 void menu_set_color(menu_t *menu, color_selection_t color) {
@@ -75,19 +112,22 @@ void menu_set_color(menu_t *menu, color_selection_t color) {
 void menu_update(menu_t *menu, uint8_t input) {
     if (!menu) return;
 
+    uint8_t pressed = input & ~s_prev_input; // only act on rising edges
+    s_prev_input = input;
+
     // check peer first (no-blocking)
     menu_poll_peer(menu);
 
     switch (menu->state) {
     case MENU_STATE_COLOR_SELECT:
-        if (input & (BTN_LEFT | BTN_RIGHT)) {
+        if (pressed & (BTN_LEFT | BTN_RIGHT)) {
             menu->color = (menu->color == COLOR_BLUE) ? COLOR_RED : COLOR_BLUE;
             // skip if peer already took this color
             if (s_peer_ready && menu->color == s_peer_color) {
                 menu->color = (menu->color == COLOR_BLUE) ? COLOR_RED : COLOR_BLUE;
             }
         }
-        if (input & BTN_SELECT) {
+        if (pressed & BTN_SELECT) {
             s_local_ready    = true;
             menu->both_ready = (s_local_ready && s_peer_ready);
             menu->state      = menu->both_ready ? MENU_STATE_READY : MENU_STATE_WAITING;
@@ -96,7 +136,7 @@ void menu_update(menu_t *menu, uint8_t input) {
         break;
 
     case MENU_STATE_WAITING:
-        if (input & BTN_BACK) {
+        if (pressed & BTN_BACK) {
             s_local_ready    = false;
             menu->both_ready = false;
             menu->state      = MENU_STATE_COLOR_SELECT;
@@ -107,7 +147,7 @@ void menu_update(menu_t *menu, uint8_t input) {
 
     case MENU_STATE_READY:
         // optional: allow un-ready before game start
-        if (input & BTN_BACK) {
+        if (pressed & BTN_BACK) {
             s_local_ready    = false;
             s_peer_ready     = false;      // optional: force peer re-handshake
             menu->both_ready = false;
@@ -120,37 +160,45 @@ void menu_update(menu_t *menu, uint8_t input) {
 
 void menu_draw(menu_t *menu) {
     if (!menu) return;
-    int y = 0;
+    //lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
+    lcd_setFontSize(2);
 
+    // Header
+    int y = 6;
+    lcd_drawString(8, y, "SNAKE - MULTIPLAYER", CYAN); y += 20;
+    lcd_setFontSize(1);
+
+    // Color cards
+    const coord_t card_w = 90;
+    const coord_t card_h = 60;
+    const coord_t top    = y;
+    draw_panel(12, top, card_w, card_h, BLUE, "BLUE", menu->color == COLOR_BLUE, s_peer_ready && s_peer_color == COLOR_BLUE);
+    draw_panel(LCD_W - card_w - 12, top, card_w, card_h, RED, "RED", menu->color == COLOR_RED, s_peer_ready && s_peer_color == COLOR_RED);
+
+    // Status
+    y = top + card_h + 10;
+    lcd_drawString(8, y, "You:", WHITE);
+    lcd_drawString(48, y, s_local_ready ? "READY" : "Choosing", s_local_ready ? GREEN : WHITE); y += 12;
+    lcd_drawString(8, y, "Peer:", WHITE);
+    lcd_drawString(48, y, s_peer_ready ? "READY" : "Waiting", s_peer_ready ? GREEN : WHITE); y += 14;
+
+    // Bottom instructions/state
     switch (menu->state) {
-    case MENU_STATE_COLOR_SELECT: {
-        lcd_drawString(0, y, "SNAKE - MULTIPLAYER", WHITE); y += 12;
-        lcd_drawString(0, y, "Select Color:", WHITE);       y += 12;
-        char line[24];
-        snprintf(line, sizeof(line), "> %s <", color_name(menu->color));
-        lcd_drawString(0, y, line, WHITE); y += 12;
-        if (s_peer_ready) {
-            char taken[24];
-            snprintf(taken, sizeof(taken), "Peer took: %s", color_name(s_peer_color));
-            lcd_drawString(0, y, taken, WHITE); y += 12;
-        }
-        lcd_drawString(0, y, "Left/Right: Toggle", WHITE); y += 12;
-        lcd_drawString(0, y, "A: Ready", WHITE);
+    case MENU_STATE_COLOR_SELECT:
+        lcd_drawString(8, y, "OPTION: Left   START: Right", LIGHTGREY); y += 12;
+        lcd_drawString(8, y, "A: Ready   B: Back", LIGHTGREY);
         break;
-    }
     case MENU_STATE_WAITING:
-        lcd_drawString(0, y, "Waiting for peer...", WHITE); y += 12;
-        lcd_drawString(0, y, s_local_ready ? "You: READY" : "You: —", WHITE); y += 12;
-        lcd_drawString(0, y, s_peer_ready  ? "Peer: READY" : "Peer: —", WHITE);
+        lcd_drawString(8, y, "Waiting for peer...", YELLOW); y += 12;
+        lcd_drawString(8, y, "B: Change color", LIGHTGREY);
         break;
-
     case MENU_STATE_READY: {
-        lcd_drawString(0, y, "Both ready!", WHITE); y += 12;
         char vs[32];
         snprintf(vs, sizeof(vs), "%s vs %s",
                  color_name(menu->color),
                  s_peer_ready ? (menu->color == COLOR_BLUE ? "RED" : "BLUE") : "?");
-        lcd_drawString(0, y, vs, WHITE);
+        lcd_drawString(8, y, "Both ready!", GREEN); y += 12;
+        lcd_drawString(8, y, vs, WHITE);
         break;
     }
     }
