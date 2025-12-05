@@ -363,6 +363,7 @@ void game_tick(void){
         case game_over_st:
             // After a round ends, wait for the menu handshake to complete again
             // so both players press START before restarting.
+            lcd_frameDisable();
             if (g_menu && g_menu->both_ready) {
                 currentState = waiting_st;
             }
