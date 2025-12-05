@@ -34,6 +34,8 @@ bool menu_is_ready(menu_t *menu);
 typedef enum {
     MENU_MSG_READY  = 1,
     MENU_MSG_CANCEL = 2,
+    MENU_MSG_START  = 3,
+    MENU_MSG_START_CANCEL = 4,
     GAME_MSG_MOVE   = 10,   // Snake direction + position
     GAME_MSG_FRUIT  = 11    // Fruit spawn location
 } msg_type_t;

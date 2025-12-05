@@ -253,12 +253,12 @@ void game_tick(void){
             break;
 
         case waiting_st:
-            //UPDATE PLAYER ID AND HOST HERE
-            if (!pin_get_level(HW_BTN_START)) {
+            // Start only after both players have confirmed START on the menu
+            if (g_menu && g_menu->both_ready) {
                 // Assign player ID based on color
-                my_player_id = (g_menu && g_menu->color == COLOR_BLUE) ? 1 : 2;
-                i_am_host = true;
-                
+                my_player_id = (g_menu->color == COLOR_BLUE) ? 1 : 2;
+                i_am_host = (my_player_id == 1);
+
                 snake_init(&snake1, 1);
                 snake_init(&snake2, 2);
                 spawn_fruit();

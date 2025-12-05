@@ -47,6 +47,8 @@ typedef struct __attribute__((packed)) {
 // local shadow (not exposed in menu.h)
 static bool s_local_ready = false;
 static bool s_peer_ready  = false;
+static bool s_local_start = false;
+static bool s_peer_start  = false;
 static color_selection_t s_peer_color = -1;  // -1 = unknown
 static uint8_t s_prev_input = 0;             // edge detection
 static bool s_dirty = true;                  // redraw flag
@@ -82,23 +84,40 @@ static bool menu_poll_peer(menu_t *menu) {
 
     bool prev_peer_ready  = s_peer_ready;
     color_selection_t prev_peer_color = s_peer_color;
+    bool prev_peer_start = s_peer_start;
     menu_state_t prev_state = menu->state;
     bool prev_both_ready = menu->both_ready;
 
     if (m.type == MENU_MSG_READY) {
         s_peer_ready = true;
         s_peer_color = (color_selection_t)m.color;  // lock their color
+        s_peer_start = false;  // reset start confirmation when re-ready
     }
     if (m.type == MENU_MSG_CANCEL) {
         s_peer_ready = false;
+        s_peer_start = false;
         s_peer_color = -1;  // unlock
     }
+    if (m.type == MENU_MSG_START) {
+        s_peer_start = true;
+    }
+    if (m.type == MENU_MSG_START_CANCEL) {
+        s_peer_start = false;
+    }
 
-    menu->both_ready = (s_local_ready && s_peer_ready);
-    if (menu->both_ready) menu->state = MENU_STATE_READY;
+    bool color_ready = (s_local_ready && s_peer_ready);
+    menu->both_ready = (color_ready && s_local_start && s_peer_start);
+    if (color_ready) {
+        menu->state = MENU_STATE_READY;
+    } else {
+        menu->state = s_local_ready ? MENU_STATE_WAITING : MENU_STATE_COLOR_SELECT;
+        s_local_start = false;
+        s_peer_start = false;
+    }
 
     if (prev_peer_ready != s_peer_ready ||
         prev_peer_color != s_peer_color ||
+        prev_peer_start != s_peer_start ||
         prev_state != menu->state ||
         prev_both_ready != menu->both_ready) {
         s_dirty = true;
@@ -116,6 +135,8 @@ void menu_init(menu_t *menu) {
     menu->both_ready = false;
     s_local_ready    = false;
     s_peer_ready     = false;
+    s_local_start    = false;
+    s_peer_start     = false;
     s_peer_color     = -1;
     s_prev_input     = 0;
     s_dirty          = true;
@@ -149,6 +170,7 @@ void menu_update(menu_t *menu, uint8_t input) {
         }
         if (pressed & BTN_SELECT) {
             s_local_ready    = true;
+            s_local_start    = false;
             menu->both_ready = (s_local_ready && s_peer_ready);
             menu->state      = menu->both_ready ? MENU_STATE_READY : MENU_STATE_WAITING;
             menu_send(MENU_MSG_READY, menu->color);
@@ -159,6 +181,7 @@ void menu_update(menu_t *menu, uint8_t input) {
     case MENU_STATE_WAITING:
         if (pressed & BTN_BACK) {
             s_local_ready    = false;
+            s_local_start    = false;
             menu->both_ready = false;
             menu->state      = MENU_STATE_COLOR_SELECT;
             menu_send(MENU_MSG_CANCEL, menu->color);
@@ -172,9 +195,23 @@ void menu_update(menu_t *menu, uint8_t input) {
         if (pressed & BTN_BACK) {
             s_local_ready    = false;
             s_peer_ready     = false;      // optional: force peer re-handshake
+            s_local_start    = false;
+            s_peer_start     = false;
             menu->both_ready = false;
             menu->state      = MENU_STATE_COLOR_SELECT;
             menu_send(MENU_MSG_CANCEL, menu->color);
+            changed = true;
+        } else if (pressed & BTN_SELECT) {
+            // re-open color selection if both already ready but want to change
+            s_local_ready = false;
+            s_local_start = false;
+            menu->state   = MENU_STATE_COLOR_SELECT;
+            menu_send(MENU_MSG_CANCEL, menu->color);
+            changed = true;
+        } else if (pressed & BTN_RIGHT) { // START button
+            s_local_start = true;
+            menu_send(MENU_MSG_START, menu->color);
+            menu->both_ready = (s_local_ready && s_peer_ready && s_local_start && s_peer_start);
             changed = true;
         }
         break;
@@ -209,6 +246,10 @@ void menu_draw(menu_t *menu) {
     lcd_drawString(48, y, s_local_ready ? "READY" : "Choosing", s_local_ready ? GREEN : WHITE); y += 12;
     lcd_drawString(8, y, "Peer:", WHITE);
     lcd_drawString(48, y, s_peer_ready ? "READY" : "Waiting", s_peer_ready ? GREEN : WHITE); y += 14;
+    lcd_drawString(8, y, "Start:", WHITE);
+    lcd_drawString(48, y, s_local_start ? "Pressed" : "Waiting", s_local_start ? GREEN : WHITE); y += 12;
+    lcd_drawString(8, y, "Peer Start:", WHITE);
+    lcd_drawString(88, y, s_peer_start ? "Pressed" : "Waiting", s_peer_start ? GREEN : WHITE); y += 14;
 
     // Bottom instructions/state
     switch (menu->state) {
@@ -226,7 +267,12 @@ void menu_draw(menu_t *menu) {
                  color_name(menu->color),
                  s_peer_ready ? (menu->color == COLOR_BLUE ? "RED" : "BLUE") : "?");
         lcd_drawString(8, y, "Both ready!", GREEN); y += 12;
-        lcd_drawString(8, y, vs, WHITE);
+        lcd_drawString(8, y, vs, WHITE); y += 12;
+        if (menu->both_ready) {
+            lcd_drawString(8, y, "Starting game...", GREEN);
+        } else {
+            lcd_drawString(8, y, "Press START on both devices", LIGHTGREY);
+        }
         break;
     }
     }
@@ -236,6 +282,6 @@ void menu_draw(menu_t *menu) {
 
 bool menu_is_ready(menu_t *menu) {
     if (!menu) return false;
-    menu->both_ready = (s_local_ready && s_peer_ready);
+    menu->both_ready = (s_local_ready && s_peer_ready && s_local_start && s_peer_start);
     return menu->both_ready;
 }
