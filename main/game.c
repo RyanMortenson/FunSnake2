@@ -237,21 +237,26 @@ void draw_board() {
 
 static bool sound_effects_enabled = true;
 
-static void play_sound_effect(const uint8_t *samples,
+static void play_sound_effect(const void *samples,
                               uint32_t sample_count,
+                              uint32_t bits_per_sample,
                               uint32_t sample_rate)
 {
     if (!sound_effects_enabled) {
         return;
     }
 
-    if (!samples || sample_count == 0 || sample_rate == 0) {
+    if (!samples || sample_count == 0 || sample_rate == 0 || bits_per_sample == 0) {
+        return;
+    }
+
+    if ((bits_per_sample % 8) != 0) {
         return;
     }
 
     (void)sample_rate;  // Sample rate currently fixed by sound driver
 
-    const size_t sample_bytes = sample_count * sizeof(samples[0]);
+    const size_t sample_bytes = sample_count * (bits_per_sample / 8U);
     sound_start(samples, sample_bytes, false);
 }
 
@@ -420,9 +425,10 @@ void game_tick(void){
                     fruit_moved = true;
                     spawn_fruit();
                     fruits_eaten++;
-                    play_sound_effect(chomp_155392,
-                                    CHOMP_155392_SAMPLES,
-                                    CHOMP_155392_SAMPLE_RATE);
+                    play_sound_effect(chomp_samples,
+                                    CHOMP_SAMPLES,
+                                    CHOMP_BITS_PER_SAMPLE,
+                                    CHOMP_SAMPLE_RATE);
                     com_send_fruit(fruit_x, fruit_y);
                 }
 
@@ -434,6 +440,7 @@ void game_tick(void){
 
                     play_sound_effect(sound_effect_car_crash_394903,
                                     SOUND_EFFECT_CAR_CRASH_394903_SAMPLES,
+                                    SOUND_EFFECT_CAR_CRASH_394903_BITS_PER_SAMPLE,
                                     SOUND_EFFECT_CAR_CRASH_394903_SAMPLE_RATE);
                     currentState = game_over_st;
                     draw_game_over_screen();
