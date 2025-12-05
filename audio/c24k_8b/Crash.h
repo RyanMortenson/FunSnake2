@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include <stdint.h>
 
 #define SOUND_EFFECT_CAR_CRASH_394903_BITS_PER_SAMPLE 8
