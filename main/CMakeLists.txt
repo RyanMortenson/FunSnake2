@@ -4,8 +4,8 @@ idf_component_register(SRCS main.c
                            nav.c
                            menu.c
                            com.c
-                           ../audio/Chomp.c
-                           ../audio/Crash.c
+                           ../audio/c24k_8b/Chomp.c
+                           ../audio/c24k_8b/Crash.c
                            ../../components/joy/joy.c
                            ../../components/net/net.c
                            ../sprites/apple.c
@@ -27,7 +27,7 @@ idf_component_register(SRCS main.c
                             ../sprites/greenleft.c
                             ../sprites/greenright.c
                             ../sprites/greenup.c
-                       INCLUDE_DIRS . ../audio
+                       INCLUDE_DIRS . ../audio/c24k_8b
                                      .
                                     ../sprites
                        PRIV_REQUIRES nvs_flash esp_wifi driver freertos net esp_adc joy esp_timer config lcd cursor pin sound)

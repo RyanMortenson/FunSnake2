@@ -12,8 +12,8 @@
 #include "pin.h"
 #include "nav.h"
 #include "sound.h"
-#include "../audio/Chomp.h"
-#include "../audio/Crash.h"
+#include "../audio/c24k_8b/Chomp.h"
+#include "../audio/c24k_8b/Crash.h"
 #include "config.h"
 #include "menu.h"
 
@@ -237,7 +237,7 @@ void draw_board() {
 
 static bool sound_effects_enabled = true;
 
-static void play_sound_effect(const int16_t *samples,
+static void play_sound_effect(const uint8_t *samples,
                               uint32_t sample_count,
                               uint32_t sample_rate)
 {
