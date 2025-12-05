@@ -29,11 +29,14 @@ void menu_update(menu_t *menu, uint8_t input);
 void menu_draw(menu_t *menu);
 void menu_set_color(menu_t *menu, color_selection_t color);
 bool menu_is_ready(menu_t *menu);
+void menu_reset_sync(menu_t *menu, bool notify_peer);
 
 // Game protocol messages
 typedef enum {
     MENU_MSG_READY  = 1,
     MENU_MSG_CANCEL = 2,
+    MENU_MSG_START  = 3,
+    MENU_MSG_START_CANCEL = 4,
     GAME_MSG_MOVE   = 10,   // Snake direction + position
     GAME_MSG_FRUIT  = 11    // Fruit spawn location
 } msg_type_t;
