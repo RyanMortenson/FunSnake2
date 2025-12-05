@@ -432,9 +432,9 @@ void game_tick(void){
                     fruit_moved = true;
                     spawn_fruit();
                     fruits_eaten++;
-                    play_sound_effect(PFS2_Carrot_Chomp_7,
-                                    PFS2_CARROT_CHOMP_7_SAMPLES,
-                                    PFS2_CARROT_CHOMP_7_SAMPLE_RATE);
+                    play_sound_effect(chomp_155392,
+                                    CHOMP_155392_SAMPLES,
+                                    CHOMP_155392_SAMPLE_RATE);
                     com_send_fruit(fruit_x, fruit_y);
                 }
 
@@ -444,9 +444,9 @@ void game_tick(void){
                     snake_collision(&snake1, &snake2) ||
                     snake_collision(&snake2, &snake1)) {
 
-                    play_sound_effect(CrashAuto_BW_17108,
-                                    CRASHAUTO_BW_17108_SAMPLES,
-                                    CRASHAUTO_BW_17108_SAMPLE_RATE);
+                    play_sound_effect(sound_effect_car_crash_394903,
+                                    SOUND_EFFECT_CAR_CRASH_394903_SAMPLES,
+                                    SOUND_EFFECT_CAR_CRASH_394903_SAMPLE_RATE);
                     currentState = game_over_st;
                     draw_game_over_screen();
                     if (g_menu) {
