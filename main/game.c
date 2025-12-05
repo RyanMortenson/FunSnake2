@@ -157,16 +157,9 @@ static void draw_fruit(coord_t x, coord_t y) {
     lcd_drawRGBBitmap(x * 16, y * 16, (const color_t *)apple, APPLE_W, APPLE_H);
 }
 
-static void draw_scores_if_needed(void) {
-    static int last_score1 = -1;
-    static int last_score2 = -1;
-
+static void draw_scores(void) {
     const int score1 = snake1.queue.size - 3;
     const int score2 = snake2.queue.size - 3;
-
-    if (score1 == last_score1 && score2 == last_score2) {
-        return;
-    }
 
     lcd_fillRect(0, 0, LCD_W, LCD_CHAR_H * 2, BLACK);
 
@@ -176,9 +169,6 @@ static void draw_scores_if_needed(void) {
     sprintf(snake2_score, "Red Score: %d", score2);
     lcd_drawString(20, 5, snake1_score, BLUE);
     lcd_drawString(120, 5, snake2_score, RED);
-
-    last_score1 = score1;
-    last_score2 = score2;
 }
 
 static void draw_snake_full(const snake_t *snake) {
@@ -222,6 +212,8 @@ void draw_wait_screen(){
 //draw game over screen
 void draw_game_over_screen() {
     lcd_fillScreen(BLACK);
+    draw_scores();
+
     if (snake1.queue.size > snake2.queue.size) {
         lcd_drawString(80, 100, "BLUE WINS!", BLUE);
     } else if (snake2.queue.size > snake1.queue.size) {
@@ -230,7 +222,7 @@ void draw_game_over_screen() {
         lcd_drawString(100, 100, "IT'S A TIE!", WHITE);
     }
     lcd_drawString(100, 130, "GAME OVER", RED);
-    lcd_drawString(100, 150, "Press START to restart", WHITE);
+    lcd_drawString(70, 150, "Press START to restart", WHITE);
 }
 
 //draws the board to the screen
@@ -238,7 +230,7 @@ void draw_board() {
     lcd_fillScreen(BLACK);
 
     draw_fruit(fruit_x, fruit_y);
-    draw_scores_if_needed();
+    draw_scores();
     draw_snake_full(&snake1);
     draw_snake_full(&snake2);
     lcd_writeFrame();
@@ -476,7 +468,7 @@ void game_tick(void){
                         draw_fruit(fruit_x, fruit_y);
                     }
 
-                    draw_scores_if_needed();
+                    draw_scores();
                     lcd_writeFrame();
                     last_move_time_us = now_us;
                 }
