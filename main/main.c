@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -59,9 +61,13 @@ void update() {
 
 // WEIRD CHAT THING::
 
+static size_t lcd_framebuffer_bytes(void) {
+   // The panel runs in RGB565 mode; the driver expects two bytes per pixel.
+   return (size_t)LCD_W * (size_t)LCD_H * sizeof(uint16_t);
+}
+
 static bool lcd_enable_framebuffer_if_possible(void) {
-   // Estimate using the actual panel dimensions from the LCD driver.
-   const size_t fb_needed = LCD_W * LCD_H * sizeof(color_t);
+   const size_t fb_needed = lcd_framebuffer_bytes();
    size_t largest_free = heap_caps_get_largest_free_block(MALLOC_CAP_DMA);
 
    if (largest_free < fb_needed) {
