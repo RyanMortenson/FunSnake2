@@ -18,7 +18,6 @@
 
 #include "esp_heap_caps.h"
 
-
 static const char *TAG = "lab07";
 
 
@@ -78,6 +77,7 @@ static bool lcd_enable_framebuffer_if_possible(void) {
    lcd_frameEnable();
    return true;
 }
+
 
 
 
