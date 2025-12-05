@@ -166,13 +166,15 @@ void draw_board() {
 
 static void play_sound_effect(const int16_t *samples, uint32_t sample_count, uint32_t sample_rate) {
     if (samples && sample_count > 0 && sample_rate > 0) {
-        
+
         const size_t sample_bytes = sample_count * sizeof(samples[0]);
         int16_t *scaled = malloc(sample_bytes);
 
         if (scaled) {
+            // Keep effects at a gentler level to avoid blasting the speaker.
+            const int8_t attenuation = 8;
             for (uint32_t i = 0; i < sample_count; ++i) {
-                scaled[i] = samples[i] / 4; // Reduce amplitude to lower volume
+                scaled[i] = samples[i] / attenuation;
             }
             sound_start(scaled, sample_bytes, true);
             free(scaled);
