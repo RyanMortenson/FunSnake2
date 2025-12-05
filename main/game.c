@@ -245,7 +245,6 @@ void game_set_menu(menu_t* menu) {
 // Update the game control logic.
 // detects collisions, and updates statistics.
 void game_tick(void){
-    lcd_frameEnable();
     //FSM for the game
     switch(currentState){
         case init_st:
@@ -264,6 +263,7 @@ void game_tick(void){
                 snake_init(&snake1, 1);
                 snake_init(&snake2, 2);
                 spawn_fruit();
+                lcd_frameEnable();
                 currentState = playing_st;
             }
             break;
