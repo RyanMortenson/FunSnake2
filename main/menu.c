@@ -160,7 +160,7 @@ void menu_update(menu_t *menu, uint8_t input) {
 
 void menu_draw(menu_t *menu) {
     if (!menu) return;
-    //lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
+    lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
     lcd_setFontSize(2);
 
     // Header
