@@ -16,6 +16,8 @@
 #include "game.h"
 #include "menu.h"
 
+#include "esp_heap_caps.h"
+
 static const char *TAG = "lab07";
 
 
@@ -56,6 +58,29 @@ void update() {
    isr_triggered_count++;
 }
 
+// WEIRD CHAT THING::
+
+static size_t lcd_framebuffer_bytes(void) {
+   // The panel runs in RGB565 mode; the driver expects two bytes per pixel.
+   return (size_t)LCD_W * (size_t)LCD_H * sizeof(uint16_t);
+}
+
+static bool lcd_enable_framebuffer_if_possible(void) {
+   const size_t fb_needed = lcd_framebuffer_bytes();
+   size_t largest_free = heap_caps_get_largest_free_block(MALLOC_CAP_DMA);
+
+   if (largest_free < fb_needed) {
+       ESP_LOGW(TAG, "Frame buffer skipped: need ~%d bytes, largest block %d bytes", (int)fb_needed, (int)largest_free);
+       return false;
+   }
+
+   lcd_frameEnable();
+   return true;
+}
+
+
+
+
 
 // Draw the cursor on the screen
 void cursor(coord_t x, coord_t y, color_t color)
@@ -79,10 +104,7 @@ void app_main(void){
 
    // Initialization
    lcd_init();
-   // Skip allocating a full 240x320 framebuffer (~150 KB) because the heap
-   // cannot provide a contiguous block that large. The LCD driver will keep
-   // using its strip/line buffer to push pixels in chunks instead.
-   ESP_LOGI(TAG, "LCD: framebuffer disabled, using strip buffer updates");
+   lcd_enable_framebuffer_if_possible(); // Enable frame buffer mode
    lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
    CHK_RET(cursor_init(PER_MS));
    sound_init(SOUND_SAMPLE_RATE);
