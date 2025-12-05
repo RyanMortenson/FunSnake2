@@ -166,7 +166,8 @@ void draw_board() {
 
 static void play_sound_effect(const int16_t *samples, uint32_t sample_count, uint32_t sample_rate) {
     if (samples && sample_count > 0 && sample_rate > 0) {
-        sound_start(samples, sizeof(samples), true);
+        const size_t sample_bytes = sample_count * sizeof(samples[0]);
+        sound_start(samples, sample_bytes, true);
     }
 }
 
