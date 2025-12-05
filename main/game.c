@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "esp_timer.h"
 
 #include "game.h"
 #include "snake.h"
@@ -37,7 +38,8 @@
 
 #define TOTAL_COLUMNS 20
 #define TOTAL_ROWS 15
-#define GAME_TICKS_PER_MOVE 8
+// Aim for roughly 10 frames per second to avoid overwhelming the LCD
+#define GAME_MOVE_PERIOD_US 250000
 
 typedef enum {
     init_st,
@@ -58,7 +60,7 @@ static coord_t fruit_x;
 static coord_t fruit_y;
 static uint8_t peer_snake_dir = 2;  // track peer's snake direction
 
-static uint16_t ticks_since_last_move = 0;
+static uint64_t last_move_time_us = 0;
 
 //draw UI for wait screen
 void draw_wait_screen(){
@@ -271,18 +273,22 @@ void game_tick(void){
                 // Assign player ID based on color
                 my_player_id = (g_menu->color == COLOR_BLUE) ? 1 : 2;
                 i_am_host = (my_player_id == 1);
-
+                
+                
                 snake_init(&snake1, 1);
                 snake_init(&snake2, 2);
                 spawn_fruit();
                 lcd_frameEnable();
+
+                last_move_time_us = esp_timer_get_time();
+                draw_board();
                 currentState = playing_st;
             }
             break;
 
         case playing_st:
-            ticks_since_last_move++;
-            if (ticks_since_last_move >= GAME_TICKS_PER_MOVE){
+            const uint64_t now_us = esp_timer_get_time();
+            if ((now_us - last_move_time_us) >= GAME_MOVE_PERIOD_US) {
                 // --- POLL PEER FOR UPDATES ---
                 game_msg_t* peer_msg = com_recv_game();
                 if (peer_msg) {
@@ -364,11 +370,10 @@ void game_tick(void){
                     if (g_menu) {
                         menu_reset_sync(g_menu, true);
                     }
-                    }
-                ticks_since_last_move = 0;
+                } else {
+                    draw_board();
+                    last_move_time_us = now_us;
                 }
-            if (currentState == playing_st){
-                draw_board();
             }
             break;
 
