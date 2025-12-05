@@ -49,6 +49,7 @@ static bool s_local_ready = false;
 static bool s_peer_ready  = false;
 static color_selection_t s_peer_color = -1;  // -1 = unknown
 static uint8_t s_prev_input = 0;             // edge detection
+static bool s_dirty = true;                  // redraw flag
 static inline const char* color_name(color_selection_t c) {
     return (c == COLOR_BLUE) ? "BLUE" : "RED";
 }
@@ -74,10 +75,15 @@ static void menu_send(uint8_t type, color_selection_t color) {
     (void)com_write(&m, sizeof(m)); // assume non-blocking or short
 }
 
-static void menu_poll_peer(menu_t *menu) {
+static bool menu_poll_peer(menu_t *menu) {
     menu_msg_t m;
     int32_t n = com_read(&m, sizeof(m));
-    if (n != (int32_t)sizeof(m)) return; // ignore nothing/short reads
+    if (n != (int32_t)sizeof(m)) return false; // ignore nothing/short reads
+
+    bool prev_peer_ready  = s_peer_ready;
+    color_selection_t prev_peer_color = s_peer_color;
+    menu_state_t prev_state = menu->state;
+    bool prev_both_ready = menu->both_ready;
 
     if (m.type == MENU_MSG_READY) {
         s_peer_ready = true;
@@ -90,6 +96,16 @@ static void menu_poll_peer(menu_t *menu) {
 
     menu->both_ready = (s_local_ready && s_peer_ready);
     if (menu->both_ready) menu->state = MENU_STATE_READY;
+
+    if (prev_peer_ready != s_peer_ready ||
+        prev_peer_color != s_peer_color ||
+        prev_state != menu->state ||
+        prev_both_ready != menu->both_ready) {
+        s_dirty = true;
+        return true;
+    }
+
+    return false;
 }
 
 // ------------------- public API -------------------
@@ -102,6 +118,7 @@ void menu_init(menu_t *menu) {
     s_peer_ready     = false;
     s_peer_color     = -1;
     s_prev_input     = 0;
+    s_dirty          = true;
 }
 
 void menu_set_color(menu_t *menu, color_selection_t color) {
@@ -118,6 +135,8 @@ void menu_update(menu_t *menu, uint8_t input) {
     // check peer first (no-blocking)
     menu_poll_peer(menu);
 
+    bool changed = false;
+
     switch (menu->state) {
     case MENU_STATE_COLOR_SELECT:
         if (pressed & (BTN_LEFT | BTN_RIGHT)) {
@@ -126,12 +145,14 @@ void menu_update(menu_t *menu, uint8_t input) {
             if (s_peer_ready && menu->color == s_peer_color) {
                 menu->color = (menu->color == COLOR_BLUE) ? COLOR_RED : COLOR_BLUE;
             }
+            changed = true;
         }
         if (pressed & BTN_SELECT) {
             s_local_ready    = true;
             menu->both_ready = (s_local_ready && s_peer_ready);
             menu->state      = menu->both_ready ? MENU_STATE_READY : MENU_STATE_WAITING;
             menu_send(MENU_MSG_READY, menu->color);
+            changed = true;
         }
         break;
 
@@ -141,6 +162,7 @@ void menu_update(menu_t *menu, uint8_t input) {
             menu->both_ready = false;
             menu->state      = MENU_STATE_COLOR_SELECT;
             menu_send(MENU_MSG_CANCEL, menu->color);
+            changed = true;
         }
         // peer readiness flips state inside menu_poll_peer()
         break;
@@ -153,13 +175,19 @@ void menu_update(menu_t *menu, uint8_t input) {
             menu->both_ready = false;
             menu->state      = MENU_STATE_COLOR_SELECT;
             menu_send(MENU_MSG_CANCEL, menu->color);
+            changed = true;
         }
         break;
+    }
+
+    if (changed) {
+        s_dirty = true;
     }
 }
 
 void menu_draw(menu_t *menu) {
     if (!menu) return;
+    if (!s_dirty) return;
     lcd_fillScreen(CONFIG_COLOR_BACKGROUND);
     lcd_setFontSize(2);
 
@@ -202,6 +230,8 @@ void menu_draw(menu_t *menu) {
         break;
     }
     }
+
+    s_dirty = false;
 }
 
 bool menu_is_ready(menu_t *menu) {
