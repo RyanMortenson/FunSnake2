@@ -24,7 +24,7 @@
 #define YELLOW rgb565(31, 31, 0)
 #endif
 #ifndef LIGHTGREY
-#define LIGHTGREY rgb565(20, 20, 20)
+#define LIGHTGREY rgb565(211, 211, 211)
 #endif
 
 // -------- input bitmask (these bits must match what main passes to menu_update) -----
@@ -66,7 +66,7 @@ static void draw_panel(coord_t x, coord_t y, coord_t w, coord_t h, color_t base,
     }
     coord_t tx = x + 8;
     coord_t ty = y + (h/2 - LCD_CHAR_H);
-    lcd_drawString(tx, ty, label, WHITE);
+    lcd_drawString(tx, ty, label, BLACK);
     if (disabled) {
         lcd_drawString(tx, ty + LCD_CHAR_H + 2, "(TAKEN)", RED);
     }
@@ -260,7 +260,7 @@ void menu_draw(menu_t *menu) {
     const coord_t card_h = 60;
     const coord_t top    = y;
     draw_panel(12, top, card_w, card_h, BLUE, "BLUE", menu->color == COLOR_BLUE, s_peer_ready && s_peer_color == COLOR_BLUE);
-    draw_panel(LCD_W - card_w - 12, top, card_w, card_h, RED, "RED", menu->color == COLOR_RED, s_peer_ready && s_peer_color == COLOR_RED);
+    draw_panel(LCD_W - card_w - 12, top, card_w, card_h, LIGHTGREY, "GRAY", menu->color == COLOR_RED, s_peer_ready && s_peer_color == COLOR_RED);
 
     // Status
     y = top + card_h + 10;
