@@ -1,13 +1,8 @@
 
-#ifndef AUDIO_C24K_8B_CHOMP_H
-#define AUDIO_C24K_8B_CHOMP_H
-
 #include <stdint.h>
 
-#define CHOMP_155392_BITS_PER_SAMPLE 8
-#define CHOMP_155392_SAMPLE_RATE 24000
-#define CHOMP_155392_SAMPLES 23824
+#define BRUH_BITS_PER_SAMPLE 16
+#define BRUH_SAMPLE_RATE 32000
+#define BRUH_SAMPLES 34272
 
-extern const uint8_t chomp_155392[CHOMP_155392_SAMPLES];
-
-#endif  // AUDIO_C24K_8B_CHOMP_H
+extern const int16_t bruh[BRUH_SAMPLES];
