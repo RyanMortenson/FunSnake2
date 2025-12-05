@@ -78,7 +78,6 @@ void draw_game_over_screen() {
 
 //draws the board to the screen
 void draw_board() {
-    lcd_frameEnable();
     lcd_fillScreen(BLACK);
 
     // Draw fruit
@@ -246,6 +245,7 @@ void game_set_menu(menu_t* menu) {
 // Update the game control logic.
 // detects collisions, and updates statistics.
 void game_tick(void){
+    lcd_frameEnable();
     //FSM for the game
     switch(currentState){
         case init_st:
