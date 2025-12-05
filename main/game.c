@@ -72,6 +72,13 @@ void draw_wait_screen(){
 //draw game over screen
 void draw_game_over_screen() {
     lcd_fillScreen(BLACK);
+    if (snake1.queue.size > snake2.queue.size) {
+        lcd_drawString(80, 100, "BLUE WINS!", BLUE);
+    } else if (snake2.queue.size > snake1.queue.size) {
+        lcd_drawString(80, 100, "RED WINS!", RED);
+    } else {
+        lcd_drawString(100, 100, "IT'S A TIE!", WHITE);
+    }
     lcd_drawString(100, 130, "GAME OVER", RED);
     lcd_drawString(100, 150, "Press START to restart", WHITE);
 }
@@ -82,7 +89,12 @@ void draw_board() {
 
     // Draw fruit
     lcd_drawRGBBitmap(fruit_x * 16, fruit_y * 16, (const color_t *)apple, APPLE_W, APPLE_H);
-
+    char snake1_score[23];
+    char snake2_score[23];
+    sprintf(snake1_score, "Blue Score: %d", snake1.queue.size - 3);
+    sprintf(snake2_score, "Red Score: %d", snake2.queue.size - 3);
+    lcd_drawString(20, 5, snake1_score, BLUE);
+    lcd_drawString(120, 5, snake2_score, RED);
     // Draw snake 1
     snake_block_t *b = snake1.queue.head;
     if (b) {
