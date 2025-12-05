@@ -247,17 +247,35 @@ static bool sound_effects_enabled = true;
 
 static void play_sound_effect(const int16_t *samples,
                               uint32_t sample_count,
-                              uint32_t sample_rate) {
-    if (!sound_effects_enabled) return;
-
-    if (samples && sample_count > 0 && sample_rate > 0) {
-        const int8_t attenuation = 8;  // or 50, 100, whatever you like
-        for (uint32_t i = 0; i < sample_count; ++i) {
-            sfx_buffer[i] = samples[i] / attenuation;
-        }
-        sound_start(sfx_buffer, sample_count * sizeof(int16_t), true);
+                              uint32_t sample_rate)
+{
+    if (!sound_effects_enabled) {
+        return;
     }
+
+    if (!samples || sample_count == 0 || sample_rate == 0) {
+        return;
+    }
+
+    const size_t sample_bytes = sample_count * sizeof(samples[0]);
+    int16_t *scaled = malloc(sample_bytes);
+
+    if (!scaled) {
+        // Not enough heap — skip the sound entirely rather than blasting ears
+        printf("SFX: malloc failed for %u bytes, skipping sound\n",
+               (unsigned)sample_bytes);
+        return;
+    }
+
+    const int16_t attenuation = 8;  // or 20, 50, 100...
+    for (uint32_t i = 0; i < sample_count; ++i) {
+        scaled[i] = samples[i] / attenuation;
+    }
+
+    sound_start(scaled, sample_bytes, true);
+    free(scaled);
 }
+
 
 
 //chooses random location on board to put fruit
