@@ -59,6 +59,7 @@ static snake_t snake2;
 static coord_t fruit_x;
 static coord_t fruit_y;
 static uint8_t peer_snake_dir = 2;  // track peer's snake direction
+static uint8_t fruits_eaten = 0;
 
 static uint64_t last_move_time_us = 0;
 
@@ -350,7 +351,7 @@ void game_tick(void){
 
         case playing_st:
             const uint64_t now_us = esp_timer_get_time();
-            if ((now_us - last_move_time_us) >= GAME_MOVE_PERIOD_US) {
+            if ((now_us - last_move_time_us) >= (GAME_MOVE_PERIOD_US - 1000*fruits_eaten)) {
                 const coord_t prev_fruit_x = fruit_x;
                 const coord_t prev_fruit_y = fruit_y;
                 bool fruit_moved = false;
@@ -428,6 +429,7 @@ void game_tick(void){
                 if (i_am_host && (p1_ate || p2_ate)) {
                     fruit_moved = true;
                     spawn_fruit();
+                    fruits_eaten++;
                     play_sound_effect(PFS2_Carrot_Chomp_7,
                                     PFS2_CARROT_CHOMP_7_SAMPLES,
                                     PFS2_CARROT_CHOMP_7_SAMPLE_RATE);
