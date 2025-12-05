@@ -174,6 +174,7 @@ void draw_board() {
             b = b->next;
         }
     }
+    lcd_writeFrame();
 }
 
 static bool sound_effects_enabled = false;
@@ -274,6 +275,7 @@ void game_tick(void){
                 snake_init(&snake1, 1);
                 snake_init(&snake2, 2);
                 spawn_fruit();
+                lcd_frameEnable();
                 currentState = playing_st;
             }
             break;
@@ -373,6 +375,7 @@ void game_tick(void){
         case game_over_st:
             // After a round ends, wait for the menu handshake to complete again
             // so both players press START before restarting.
+            lcd_frameDisable();
             if (g_menu && g_menu->both_ready) {
                 currentState = waiting_st;
             }
