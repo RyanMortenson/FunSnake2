@@ -78,6 +78,7 @@ void draw_game_over_screen() {
 
 //draws the board to the screen
 void draw_board() {
+    lcd_frameEnable();
     lcd_fillScreen(BLACK);
 
     // Draw fruit
@@ -162,6 +163,7 @@ void draw_board() {
             b = b->next;
         }
     }
+    lcd_writeFrame();
 }
 
 static bool sound_effects_enabled = false;
