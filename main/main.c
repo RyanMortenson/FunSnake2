@@ -26,7 +26,7 @@ static const char *TAG = "lab07";
 #define TIME_OUT 500 // ms
 
 
-#define SOUND_SAMPLE_RATE 32000
+#define SOUND_SAMPLE_RATE 24000  // Match bundled 24 kHz audio assets
 #define CURSOR_SZ 7 // Cursor size (width & height) in pixels
 
 

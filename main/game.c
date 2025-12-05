@@ -421,15 +421,20 @@ void game_tick(void){
                 snake_move(&snake1, p1_ate);
                 snake_move(&snake2, p2_ate);
 
-                if (i_am_host && (p1_ate || p2_ate)) {
+                const bool snake_ate = p1_ate || p2_ate;
+
+                if (i_am_host && snake_ate) {
                     fruit_moved = true;
                     spawn_fruit();
                     fruits_eaten++;
-                    play_sound_effect(chomp_samples,
-                                    CHOMP_SAMPLES,
-                                    CHOMP_BITS_PER_SAMPLE,
-                                    CHOMP_SAMPLE_RATE);
                     com_send_fruit(fruit_x, fruit_y);
+                }
+
+                if (snake_ate) {
+                    play_sound_effect(chomp_samples,
+                                      CHOMP_SAMPLES,
+                                      CHOMP_BITS_PER_SAMPLE,
+                                      CHOMP_SAMPLE_RATE);
                 }
 
                 // COLLISION DETECTION
